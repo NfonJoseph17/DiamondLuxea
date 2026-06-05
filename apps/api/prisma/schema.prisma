@@ -1,0 +1,423 @@
+// Bar/Depot Management - Prisma Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────────
+
+enum Role {
+  MANAGER
+  CASHIER
+  SALES
+}
+
+enum UnitType {
+  BOTTLE
+  CRATE
+  CARTON
+  CAN
+  UNIT
+}
+
+enum PaymentStatus {
+  UNPAID
+  PAID
+  PARTIAL
+}
+
+// Configurable units (manager-created in Settings). conversionValue = base units per unit (e.g. bottle=1, crate=12).
+model Unit {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  conversionValue Int      @map("conversion_value") // Must be > 0
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  productsAsBase   Product[]         @relation("ProductBaseUnit")
+  saleItems        SaleItem[]
+  purchaseItems    PurchaseItem[]
+  stockAdjustments StockAdjustment[]
+
+  @@map("units")
+}
+
+enum LocationType {
+  MAIN_STORE
+  BAR
+  DEPOT
+  DISPLAY
+  OTHER
+}
+
+enum AdjustmentType {
+  INCREASE
+  DECREASE
+}
+
+enum AdjustmentReasonType {
+  BREAKAGE
+  LOSS
+  COUNT_CORRECTION
+  DAMAGE
+  OTHER
+}
+
+enum SessionStatus {
+  OPEN
+  CLOSED
+}
+
+enum TransactionType {
+  PURCHASE
+  SALE
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  OPENING_BALANCE
+}
+
+// ─── User ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  fullName     String   @map("full_name")
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         Role     @default(CASHIER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  purchases        Purchase[]
+  sales            Sale[]
+  transfers        StockTransfer[]
+  adjustments      StockAdjustment[]
+  sessionsOpened   DailySession[]    @relation("session_opener")
+  sessionsClosed   DailySession[]    @relation("session_closer")
+  expenditures     Expenditure[]
+
+  @@map("users")
+}
+
+// ─── Operating expenditures (utilities, rent, misc. bills) ───────────────
+
+model Expenditure {
+  id          String   @id @default(cuid())
+  amount      Decimal  @db.Decimal(12, 2)
+  spentAt     DateTime @default(now()) @map("spent_at")
+  category    String?
+  description String
+  notes       String?
+  createdById String   @map("created_by_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([spentAt])
+  @@map("expenditures")
+}
+
+// ─── Product & Pricing ──────────────────────────────────────────────────────
+// unitType: stock is stored in this unit (bottle, crate, etc.).
+// Future: add optional unitsPerCrate Int? for crate-to-bottle conversion.
+
+model Product {
+  id                 String    @id @default(cuid())
+  name               String
+  sku                String?   @unique
+  category           String
+  unitType           UnitType  @default(UNIT) @map("unit_type") // Legacy: kept for migration
+  baseUnitId         String?   @map("base_unit_id") // Product's base unit (prices stored per this)
+  description        String?
+  imageUrl           String?   @map("image_url") // e.g. /api/uploads/products/... or external https URL
+  lowStockLevel      Int       @default(10) @map("low_stock_level")
+  isActive           Boolean   @default(true) @map("is_active")
+  defaultSupplierId  String?   @map("default_supplier_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  baseUnit           Unit?             @relation("ProductBaseUnit", fields: [baseUnitId], references: [id], onDelete: Restrict)
+  defaultSupplier   Supplier?         @relation(fields: [defaultSupplierId], references: [id], onDelete: SetNull)
+  priceHistory      ProductPriceHistory[]
+  inventoryBalance InventoryBalance[]
+  purchaseItems    PurchaseItem[]
+  saleItems        SaleItem[]
+  transferItems    StockTransferItem[]
+  adjustments      StockAdjustment[]
+  transactions     InventoryTransaction[]
+
+  @@index([category])
+  @@index([isActive])
+  @@index([baseUnitId])
+  @@map("products")
+}
+
+model ProductPriceHistory {
+  id            String    @id @default(cuid())
+  productId     String    @map("product_id")
+  purchasePrice Decimal   @map("purchase_price") @db.Decimal(12, 2)
+  retailPrice   Decimal   @map("retail_price") @db.Decimal(12, 2)
+  wholesalePrice Decimal  @map("wholesale_price") @db.Decimal(12, 2)
+  effectiveFrom DateTime  @default(now()) @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, effectiveFrom])
+  @@map("product_price_history")
+}
+
+// ─── Inventory Locations & Balances ─────────────────────────────────────────
+
+model InventoryLocation {
+  id        String       @id @default(cuid())
+  name      String
+  type      LocationType @default(MAIN_STORE)
+  isActive  Boolean      @default(true) @map("is_active")
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  inventoryBalance InventoryBalance[]
+  purchases        Purchase[]
+  sales            Sale[]
+  transfersFrom    StockTransfer[]       @relation("transfer_from")
+  transfersTo      StockTransfer[]       @relation("transfer_to")
+  adjustments      StockAdjustment[]
+  transactions     InventoryTransaction[]
+  dailySessions    DailySession[]
+
+  @@map("inventory_locations")
+}
+
+model InventoryBalance {
+  id         String   @id @default(cuid())
+  productId  String   @map("product_id")
+  locationId String   @map("location_id")
+  quantity   Int      @default(0)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  product  Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  location InventoryLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, locationId])
+  @@index([locationId])
+  @@map("inventory_balances")
+}
+
+// ─── Supplier ───────────────────────────────────────────────────────────────
+
+model Supplier {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String?
+  address   String?
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  purchases       Purchase[]
+  defaultProducts Product[]
+
+  @@map("suppliers")
+}
+
+// ─── Purchases ──────────────────────────────────────────────────────────────
+
+model Purchase {
+  id                String   @id @default(cuid())
+  supplierId        String?  @map("supplier_id")
+  locationId        String   @map("location_id")
+  referenceNumber   String?  @map("reference_number")
+  purchasedAt       DateTime @default(now()) @map("purchased_at")
+  createdById       String   @map("created_by_id")
+  notes             String?
+  clientMutationId  String?  @unique @map("client_mutation_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  supplier  Supplier?         @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  location  InventoryLocation @relation(fields: [locationId], references: [id])
+  createdBy User              @relation(fields: [createdById], references: [id])
+  items     PurchaseItem[]
+
+  @@index([purchasedAt])
+  @@index([locationId])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id                         String  @id @default(cuid())
+  purchaseId                 String  @map("purchase_id")
+  productId                  String  @map("product_id")
+  quantity                   Int     // Quantity in selected unit
+  unitId                     String? @map("unit_id")
+  unitConversionValueSnapshot Int?   @map("unit_conversion_value_snapshot") // At transaction time
+  unitNameSnapshot           String? @map("unit_name_snapshot")
+  unitPurchasePrice          Decimal @map("unit_purchase_price") @db.Decimal(12, 2) // Derived per selected unit
+  unitSellingPriceSnapshot   Decimal @map("unit_selling_price_snapshot") @db.Decimal(12, 2)
+  subtotal                   Decimal @db.Decimal(12, 2)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+  unit     Unit?    @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@index([purchaseId])
+  @@map("purchase_items")
+}
+
+// ─── Sales ──────────────────────────────────────────────────────────────────
+
+model Sale {
+  id                 String         @id @default(cuid())
+  locationId         String         @map("location_id")
+  soldAt             DateTime       @default(now()) @map("sold_at")
+  createdById        String         @map("created_by_id")
+  totalAmount        Decimal        @map("total_amount") @db.Decimal(12, 2)
+  paymentStatus      PaymentStatus  @default(PAID) @map("payment_status")
+  amountPaid         Decimal        @default(0) @map("amount_paid") @db.Decimal(12, 2)
+  notes              String?
+  clientMutationId   String?        @unique @map("client_mutation_id")
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
+
+  location  InventoryLocation @relation(fields: [locationId], references: [id])
+  createdBy User              @relation(fields: [createdById], references: [id])
+  items     SaleItem[]
+
+  @@index([soldAt])
+  @@index([locationId])
+  @@map("sales")
+}
+
+model SaleItem {
+  id                         String  @id @default(cuid())
+  saleId                     String  @map("sale_id")
+  productId                  String  @map("product_id")
+  quantity                   Int     // Quantity in selected unit
+  unitId                     String? @map("unit_id")
+  unitConversionValueSnapshot Int?   @map("unit_conversion_value_snapshot") // At transaction time
+  unitNameSnapshot           String? @map("unit_name_snapshot")
+  unitSellingPrice           Decimal @map("unit_selling_price") @db.Decimal(12, 2) // Derived per selected unit
+  unitPurchasePriceSnapshot  Decimal @map("unit_purchase_price_snapshot") @db.Decimal(12, 2)
+  subtotal                   Decimal @db.Decimal(12, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+  unit    Unit?   @relation(fields: [unitId], references: [id], onDelete: SetNull)
+
+  @@index([saleId])
+  @@map("sale_items")
+}
+
+// ─── Stock Transfers ────────────────────────────────────────────────────────
+
+model StockTransfer {
+  id             String   @id @default(cuid())
+  fromLocationId String   @map("from_location_id")
+  toLocationId   String   @map("to_location_id")
+  transferredAt  DateTime @default(now()) @map("transferred_at")
+  createdById    String   @map("created_by_id")
+  notes          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  fromLocation InventoryLocation   @relation("transfer_from", fields: [fromLocationId], references: [id])
+  toLocation   InventoryLocation   @relation("transfer_to", fields: [toLocationId], references: [id])
+  createdBy    User                @relation(fields: [createdById], references: [id])
+  items        StockTransferItem[]
+
+  @@index([transferredAt])
+  @@map("stock_transfers")
+}
+
+model StockTransferItem {
+  id              String @id @default(cuid())
+  stockTransferId String @map("stock_transfer_id")
+  productId       String @map("product_id")
+  quantity        Int
+
+  stockTransfer StockTransfer @relation(fields: [stockTransferId], references: [id], onDelete: Cascade)
+  product       Product       @relation(fields: [productId], references: [id])
+
+  @@index([stockTransferId])
+  @@map("stock_transfer_items")
+}
+
+// ─── Stock Adjustments ──────────────────────────────────────────────────────
+
+model StockAdjustment {
+  id                          String              @id @default(cuid())
+  locationId                  String              @map("location_id")
+  productId                   String              @map("product_id")
+  adjustmentType              AdjustmentType      @map("adjustment_type")
+  reasonType                  AdjustmentReasonType @map("reason_type")
+  quantity                    Int                 // In base units (for inventory)
+  unitId                      String?             @map("unit_id")
+  unitConversionValueSnapshot Int?                @map("unit_conversion_value_snapshot")
+  unitNameSnapshot            String?             @map("unit_name_snapshot")
+  note                        String?
+  adjustedAt                  DateTime            @default(now()) @map("adjusted_at")
+  createdById                 String              @map("created_by_id")
+  clientMutationId            String?             @unique @map("client_mutation_id")
+  createdAt                  DateTime            @default(now()) @map("created_at")
+
+  location  InventoryLocation @relation(fields: [locationId], references: [id])
+  product   Product           @relation(fields: [productId], references: [id])
+  unit      Unit?             @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  createdBy User              @relation(fields: [createdById], references: [id])
+
+  @@index([adjustedAt])
+  @@index([locationId])
+  @@map("stock_adjustments")
+}
+
+// ─── Daily Sessions ─────────────────────────────────────────────────────────
+
+model DailySession {
+  id         String        @id @default(cuid())
+  locationId String        @map("location_id")
+  openedById String        @map("opened_by_id")
+  closedById String?       @map("closed_by_id")
+  openedAt   DateTime      @default(now()) @map("opened_at")
+  closedAt   DateTime?     @map("closed_at")
+  status     SessionStatus @default(OPEN)
+
+  location InventoryLocation @relation(fields: [locationId], references: [id])
+  openedBy User              @relation("session_opener", fields: [openedById], references: [id])
+  closedBy User?             @relation("session_closer", fields: [closedById], references: [id])
+
+  @@index([locationId, status])
+  @@map("daily_sessions")
+}
+
+// ─── Inventory Transactions (Audit Trail) ───────────────────────────────────
+
+model InventoryTransaction {
+  id                       String          @id @default(cuid())
+  productId                String          @map("product_id")
+  locationId               String          @map("location_id")
+  transactionType          TransactionType @map("transaction_type")
+  referenceType            String          @map("reference_type")
+  referenceId              String          @map("reference_id")
+  quantityChange           Int             @map("quantity_change")
+  unitCostSnapshot         Decimal?        @map("unit_cost_snapshot") @db.Decimal(12, 2)
+  unitSellingPriceSnapshot Decimal?        @map("unit_selling_price_snapshot") @db.Decimal(12, 2)
+  transactionDate          DateTime        @default(now()) @map("transaction_date")
+  createdAt                DateTime        @default(now()) @map("created_at")
+
+  product  Product           @relation(fields: [productId], references: [id])
+  location InventoryLocation @relation(fields: [locationId], references: [id])
+
+  @@index([productId, transactionDate])
+  @@index([locationId, transactionDate])
+  @@index([referenceType, referenceId])
+  @@map("inventory_transactions")
+}

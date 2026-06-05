@@ -1,0 +1,41 @@
+# Dependencies
+node_modules
+.pnpm-store
+package-lock.json
+
+# Build outputs
+dist
+.next
+out
+.turbo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Prisma
+*.db
+*.db-journal
+
+# Product image uploads (API local disk)
+apps/api/uploads/
+
+# Testing
+coverage
+.nyc_output

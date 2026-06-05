@@ -1,0 +1,16 @@
+---
+description: Commit and push to GitHub after completing code or doc changes
+alwaysApply: true
+---
+
+# Git — push after changes
+
+After finishing a task that edits project files (code, config, docs):
+
+1. Run `git status` and stage all intentional changes (`git add`).
+2. Commit with a clear message (`git commit -m "..."`).
+3. Push **both** remotes when they exist:
+   - `git push origin main` (or the current branch)
+   - `git push beverlys main` (BridgeYouInnovation/Beverlys-management)
+
+Skip only if the user explicitly says not to commit/push, or if there is nothing to commit.
