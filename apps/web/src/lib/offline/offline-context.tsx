@@ -81,11 +81,7 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVis);
   }, [runSync]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-    if (process.env.NODE_ENV !== 'production') return;
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
-  }, []);
+  // Service worker registration lives in <ServiceWorkerRegistrar /> (root layout).
 
   const value = useMemo(
     () => ({ online, pendingOutbox, refreshPending, runSync }),
@@ -99,8 +95,8 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
           role="status"
           className="fixed inset-x-0 top-0 z-[100] bg-amber-600 px-4 py-2 text-center text-sm font-medium text-white shadow-md"
         >
-          You&apos;re offline — data is from cache. Sales and purchases you add will sync when you&apos;re back
-          online.
+          You&apos;re offline — showing saved data. Changes you make are stored on this device and will sync
+          automatically when you&apos;re back online.
         </div>
       )}
       {online && pendingOutbox > 0 && (

@@ -11,7 +11,7 @@ import { useSuppliers, useCreateSupplier } from '@/lib/hooks/use-suppliers';
 import { useUnits } from '@/lib/hooks/use-units';
 import { useCreatePurchase, usePurchases } from '@/lib/hooks/use-purchases';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2, Plus, Trash2, ShoppingCart, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
 import { AddSupplierDialog } from '@/components/purchases/add-supplier-dialog';
 import { EditPurchaseDialog } from '@/components/purchases/edit-purchase-dialog';
@@ -169,11 +169,7 @@ export default function PurchasesPage() {
       setNotes('');
       setSupplierId('');
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to record purchase', 'error');
-      }
+      reportMutationError(err, 'Failed to record purchase');
     } finally {
       setIsSubmitting(false);
     }

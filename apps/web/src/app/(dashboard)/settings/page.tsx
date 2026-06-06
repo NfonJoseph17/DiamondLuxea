@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useBarName } from '@/lib/hooks/use-bar-settings';
 import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit } from '@/lib/hooks/use-units';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Settings, Ruler, Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -112,7 +112,7 @@ function UnitsManagerCard() {
       setName('');
       setConversionValue('1');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Failed to create unit', 'error');
+      reportMutationError(err, 'Failed to create unit');
     }
   };
 
@@ -134,7 +134,7 @@ function UnitsManagerCard() {
       toast('Unit updated', 'success');
       setEditingId(null);
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Failed to update unit', 'error');
+      reportMutationError(err, 'Failed to update unit');
     }
   };
 
@@ -144,7 +144,7 @@ function UnitsManagerCard() {
       await deleteUnit.mutateAsync(id);
       toast('Unit deleted', 'success');
     } catch (err) {
-      toast(err instanceof ApiError ? err.message : 'Cannot delete unit in use', 'error');
+      reportMutationError(err, 'Cannot delete unit in use');
     }
   };
 

@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/select';
 import { useRegister } from '@/lib/hooks/use-users';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/user';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2 } from 'lucide-react';
 
 interface AddUserDialogProps {
@@ -44,11 +44,7 @@ export function AddUserDialog({ open, onClose }: AddUserDialogProps) {
       reset({ fullName: '', email: '', password: '', role: 'CASHIER' });
       onClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to create user', 'error');
-      }
+      reportMutationError(err, 'Failed to create user');
     }
   }
 

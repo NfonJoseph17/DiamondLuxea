@@ -12,7 +12,7 @@ import {
   useDeleteExpenditure,
 } from '@/lib/hooks/use-expenditures';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2, Trash2, Receipt, FileText } from 'lucide-react';
 
 function formatXaf(n: number) {
@@ -56,8 +56,7 @@ export default function ExpendituresPage() {
       setAmount('');
       setDescription('');
     } catch (err) {
-      if (err instanceof ApiError) toast(err.message, 'error');
-      else toast('Failed to save', 'error');
+      reportMutationError(err, 'Failed to save');
     }
   }
 
@@ -67,8 +66,7 @@ export default function ExpendituresPage() {
       await deleteExp.mutateAsync(id);
       toast('Deleted', 'success');
     } catch (err) {
-      if (err instanceof ApiError) toast(err.message, 'error');
-      else toast('Failed to delete', 'error');
+      reportMutationError(err, 'Failed to delete');
     }
   }
 

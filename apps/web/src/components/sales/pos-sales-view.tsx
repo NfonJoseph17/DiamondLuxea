@@ -12,7 +12,7 @@ import { useProducts } from '@/lib/hooks/use-products';
 import { useUnits } from '@/lib/hooks/use-units';
 import { useCreateSale, usePatchSalePayment, useSales } from '@/lib/hooks/use-sales';
 import { toast } from '@/components/ui/toaster';
-import { isApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import {
   Loader2,
   Trash2,
@@ -297,9 +297,7 @@ export function PosSalesView() {
       setReceiptSale(sale);
       setShowReceipt(true);
     } catch (err) {
-      if (isApiError(err)) toast(err.message, 'error');
-      else if (err instanceof Error && err.message) toast(err.message, 'error');
-      else toast('Failed to record sale', 'error');
+      reportMutationError(err, 'Failed to record sale');
     } finally {
       setIsSubmitting(false);
     }
@@ -610,10 +608,7 @@ export function PosSalesView() {
                             });
                             toast('Marked as paid', 'success');
                           } catch (err) {
-                            if (isApiError(err)) toast(err.message, 'error');
-                            else if (err instanceof Error && err.message)
-                              toast(err.message, 'error');
-                            else toast('Failed to update payment', 'error');
+                            reportMutationError(err, 'Failed to update payment');
                           }
                         }}
                         className="shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"

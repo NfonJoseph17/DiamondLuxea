@@ -19,7 +19,7 @@ import { useSuppliers } from '@/lib/hooks/use-suppliers';
 import { useUnits } from '@/lib/hooks/use-units';
 import { updateProductSchema, updatePriceSchema, type UpdateProductFormData, type UpdatePriceFormData } from '@/lib/validations/product';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2 } from 'lucide-react';
 import { AddSupplierDialog } from '@/components/purchases/add-supplier-dialog';
 import { useState } from 'react';
@@ -136,11 +136,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
       toast('Product and prices updated successfully', 'success');
       onClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to update product', 'error');
-      }
+      reportMutationError(err, 'Failed to update product');
     }
   }
 
@@ -157,11 +153,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
       });
       toast('Prices updated successfully', 'success');
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to update prices', 'error');
-      }
+      reportMutationError(err, 'Failed to update prices');
     }
   }
 
@@ -242,8 +234,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
                     await uploadProductPhoto.mutateAsync({ id: product.id, file: f });
                     toast('Photo updated', 'success');
                   } catch (err) {
-                    if (err instanceof ApiError) toast(err.message, 'error');
-                    else toast('Upload failed', 'error');
+                    reportMutationError(err, 'Upload failed');
                   }
                 }}
               />
@@ -260,8 +251,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
                       await clearProductPhoto.mutateAsync(product.id);
                       toast('Photo removed', 'success');
                     } catch (err) {
-                      if (err instanceof ApiError) toast(err.message, 'error');
-                      else toast('Failed to remove photo', 'error');
+                      reportMutationError(err, 'Failed to remove photo');
                     }
                   }}
                 >

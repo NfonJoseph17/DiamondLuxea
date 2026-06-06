@@ -10,7 +10,7 @@ import { useProducts, useDeleteProduct, useUpdateProduct } from '@/lib/hooks/use
 import { AddProductDialog } from '@/components/products/add-product-dialog';
 import { EditProductDialog } from '@/components/products/edit-product-dialog';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2, Plus, Search, Package, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import type { Product } from '@/types';
 
@@ -33,11 +33,7 @@ export default function ProductsPage() {
       await deleteProduct.mutateAsync({ id: p.id });
       toast('Product deactivated', 'success');
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to deactivate product', 'error');
-      }
+      reportMutationError(err, 'Failed to deactivate product');
     } finally {
       setDeletingId(null);
     }
@@ -49,11 +45,7 @@ export default function ProductsPage() {
       await updateProduct.mutateAsync({ id: p.id, data: { isActive: true } });
       toast('Product restored', 'success');
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to restore product', 'error');
-      }
+      reportMutationError(err, 'Failed to restore product');
     } finally {
       setRestoringId(null);
     }

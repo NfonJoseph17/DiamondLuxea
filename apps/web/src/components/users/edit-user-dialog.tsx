@@ -11,7 +11,7 @@ import { Select } from '@/components/ui/select';
 import { useUpdateUser } from '@/lib/hooks/use-users';
 import { updateUserSchema, type UpdateUserFormData } from '@/lib/validations/user';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@/types';
 
@@ -70,11 +70,7 @@ export function EditUserDialog({ open, user, onClose }: EditUserDialogProps) {
       toast('User updated successfully', 'success');
       onClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to update user', 'error');
-      }
+      reportMutationError(err, 'Failed to update user');
     }
   }
 

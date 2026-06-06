@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useCreateSupplier } from '@/lib/hooks/use-suppliers';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2 } from 'lucide-react';
 
 interface AddSupplierDialogProps {
@@ -40,11 +40,7 @@ export function AddSupplierDialog({ open, onClose, onCreated }: AddSupplierDialo
       setAddress('');
       onCreated(supplier);
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to add supplier', 'error');
-      }
+      reportMutationError(err, 'Failed to add supplier');
     }
   }
 

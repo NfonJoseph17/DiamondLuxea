@@ -15,7 +15,8 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET', 'default-secret-change-me'),
-        signOptions: { expiresIn: '7d' },
+        // Long-lived so users stay signed in (incl. extended offline use).
+        signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN', '365d') },
       }),
       inject: [ConfigService],
     }),

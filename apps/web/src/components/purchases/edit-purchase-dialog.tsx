@@ -11,7 +11,7 @@ import { useSuppliers } from '@/lib/hooks/use-suppliers';
 import { useUnits } from '@/lib/hooks/use-units';
 import { useUpdatePurchase } from '@/lib/hooks/use-purchases';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { isOfflineQueuedError } from '@/lib/offline/errors';
 import { Loader2, Plus, Trash2, Pencil } from 'lucide-react';
 import { derivePurchaseUnitPrice } from '@/lib/utils/pricing';
@@ -175,16 +175,11 @@ export function EditPurchaseDialog({ open, purchase, onClose, onSaved }: EditPur
       onSaved?.();
       onClose();
     } catch (err) {
+      reportMutationError(err, 'Failed to update purchase');
+      // Offline-queued counts as saved — close like a normal save.
       if (isOfflineQueuedError(err)) {
-        toast('Update queued — will sync when you are online', 'success');
         onSaved?.();
         onClose();
-        return;
-      }
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to update purchase', 'error');
       }
     }
   }

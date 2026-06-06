@@ -11,7 +11,7 @@ import { useUnits } from '@/lib/hooks/use-units';
 import { useBalances } from '@/lib/hooks/use-inventory';
 import { useAdjustments, useCreateAdjustment } from '@/lib/hooks/use-adjustments';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Scale, Loader2, Plus, Minus } from 'lucide-react';
 import { formatUnitLabel } from '@/lib/utils/units';
 import type { AdjustmentType, AdjustmentReasonType, StockAdjustment } from '@/types';
@@ -124,11 +124,7 @@ export default function AdjustmentsPage() {
       );
       resetForm();
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to apply correction', 'error');
-      }
+      reportMutationError(err, 'Failed to apply correction');
     }
   }
 

@@ -12,7 +12,7 @@ import { useSuppliers } from '@/lib/hooks/use-suppliers';
 import { useUnits } from '@/lib/hooks/use-units';
 import { createProductSchema, type CreateProductFormData } from '@/lib/validations/product';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2 } from 'lucide-react';
 import { AddSupplierDialog } from '@/components/purchases/add-supplier-dialog';
 import { useState } from 'react';
@@ -70,8 +70,7 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
         try {
           await uploadImage.mutateAsync({ id: created.id, file: imageFile });
         } catch (e) {
-          if (e instanceof ApiError) toast(e.message, 'error');
-          else toast('Product saved but image upload failed', 'error');
+          reportMutationError(e, 'Product saved but image upload failed');
         }
       }
       toast('Product created successfully', 'success');
@@ -80,11 +79,7 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
       setImagePreview(null);
       onClose();
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to create product', 'error');
-      }
+      reportMutationError(err, 'Failed to create product');
     }
   }
 

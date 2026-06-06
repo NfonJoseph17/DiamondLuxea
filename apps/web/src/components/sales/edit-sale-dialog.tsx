@@ -10,7 +10,7 @@ import { useProducts } from '@/lib/hooks/use-products';
 import { useUnits } from '@/lib/hooks/use-units';
 import { useUpdateSale } from '@/lib/hooks/use-sales';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { isOfflineQueuedError } from '@/lib/offline/errors';
 import { Loader2, Plus, Trash2, Pencil } from 'lucide-react';
 import { deriveSaleUnitPrice } from '@/lib/utils/pricing';
@@ -195,16 +195,11 @@ export function EditSaleDialog({ open, sale, onClose, onSaved }: EditSaleDialogP
       onSaved?.();
       onClose();
     } catch (err) {
+      reportMutationError(err, 'Failed to update sale');
+      // Offline-queued counts as saved — close like a normal save.
       if (isOfflineQueuedError(err)) {
-        toast('Update queued — will sync when you are online', 'success');
         onSaved?.();
         onClose();
-        return;
-      }
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to update sale', 'error');
       }
     }
   }

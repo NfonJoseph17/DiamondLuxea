@@ -10,7 +10,7 @@ import { useUsers, useDeleteUser } from '@/lib/hooks/use-users';
 import { AddUserDialog } from '@/components/users/add-user-dialog';
 import { EditUserDialog } from '@/components/users/edit-user-dialog';
 import { toast } from '@/components/ui/toaster';
-import { ApiError } from '@/lib/api/client';
+import { reportMutationError } from '@/lib/utils/mutation-feedback';
 import { Loader2, Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import type { User } from '@/types';
 
@@ -45,11 +45,7 @@ export default function UsersPage() {
       await deleteUser.mutateAsync({ id: u.id });
       toast('User deleted', 'success');
     } catch (err) {
-      if (err instanceof ApiError) {
-        toast(err.message, 'error');
-      } else {
-        toast('Failed to delete user', 'error');
-      }
+      reportMutationError(err, 'Failed to delete user');
     } finally {
       setDeletingId(null);
     }
