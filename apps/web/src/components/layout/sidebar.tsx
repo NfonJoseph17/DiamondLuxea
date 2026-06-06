@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/lib/auth/auth-context';
 import { navItemsForRole, defaultHomePath } from '@/lib/constants/navigation';
 import { useBarName } from '@/lib/hooks/use-bar-settings';
+import { InstallAppButton } from '@/components/app/install-app-button';
 import { X } from 'lucide-react';
 
 interface SidebarProps {
@@ -99,6 +100,9 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               </Link>
             );
           })}
+
+          <div className="my-2 h-px bg-white/15" />
+          <InstallAppButton onSelect={onClose} />
         </nav>
 
         {/* User */}
