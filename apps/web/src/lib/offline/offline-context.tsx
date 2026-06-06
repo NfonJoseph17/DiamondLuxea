@@ -90,24 +90,25 @@ export function OfflineProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <OfflineContext.Provider value={value}>
-      {!online && (
-        <div
-          role="status"
-          className="fixed inset-x-0 top-0 z-[100] bg-amber-600 px-4 py-2 text-center text-sm font-medium text-white shadow-md"
-        >
-          You&apos;re offline — showing saved data. Changes you make are stored on this device and will sync
-          automatically when you&apos;re back online.
+      {children}
+      {/* Compact, non-blocking status pill — bottom center, never covers the header/menu. */}
+      {(!online || pendingOutbox > 0) && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-[90] flex justify-center px-4">
+          <div
+            role="status"
+            className={`flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-medium text-white shadow-lg ${
+              !online ? 'bg-amber-600' : 'bg-primary'
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full bg-white ${online ? 'animate-pulse' : ''}`}
+            />
+            {!online
+              ? 'Offline — changes save here and sync later'
+              : `Syncing ${pendingOutbox} change${pendingOutbox !== 1 ? 's' : ''}…`}
+          </div>
         </div>
       )}
-      {online && pendingOutbox > 0 && (
-        <div
-          role="status"
-          className="fixed inset-x-0 top-0 z-[100] bg-blue-700 px-4 py-2 text-center text-sm font-medium text-white shadow-md"
-        >
-          {pendingOutbox} pending change{pendingOutbox !== 1 ? 's' : ''} to upload — syncing automatically…
-        </div>
-      )}
-      <div className={!online || pendingOutbox > 0 ? 'pt-10' : ''}>{children}</div>
     </OfflineContext.Provider>
   );
 }
