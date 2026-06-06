@@ -5,6 +5,7 @@ import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Sale } from '@/types';
 import { formatUnitLabel } from '@/lib/utils/units';
+import { useBarName } from '@/lib/hooks/use-bar-settings';
 import { Printer } from 'lucide-react';
 
 interface ReceiptDialogProps {
@@ -39,6 +40,14 @@ const RECEIPT_PRINT_STYLES = `
     display: inline-block;
     vertical-align: middle;
     object-fit: contain;
+  }
+  .receipt-business {
+    text-align: center;
+    font-weight: 700;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    color: #000;
   }
             .receipt-meta { font-size: 0.875rem; color: #444; text-align: center; margin-bottom: 12px; }
             .receipt-pay { font-size: 0.875rem; text-align: center; margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px; }
@@ -91,6 +100,7 @@ function whenImagesReady(doc: Document): Promise<void> {
 
 export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
+  const { barName } = useBarName();
 
   /**
    * Opens the OS / browser print dialog so the cashier can pick any connected printer
@@ -114,13 +124,14 @@ export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
     const iframe = document.createElement('iframe');
     iframe.setAttribute('title', 'Print receipt');
     iframe.setAttribute('aria-hidden', 'true');
+    // Off-screen but with REAL dimensions: a 0x0 / hidden iframe renders blank
+    // for printing on some browsers (notably iOS Safari).
     iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    iframe.style.left = '-10000px';
+    iframe.style.top = '0';
+    iframe.style.width = '420px';
+    iframe.style.height = '600px';
     iframe.style.border = '0';
-    iframe.style.visibility = 'hidden';
 
     document.body.appendChild(iframe);
 
@@ -179,9 +190,12 @@ export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
             <img
               data-receipt-logo
               src="/branding/diamond-luxea-logo.png"
-              alt="Diamond Luxea"
+              alt={barName}
               className="receipt-logo max-h-28 w-auto max-w-full object-contain"
             />
+          </div>
+          <div className="receipt-business text-center font-display text-xl font-bold tracking-tight text-foreground mb-2">
+            {barName}
           </div>
           <div className="receipt-meta text-center text-sm text-muted-foreground">
             {soldAt.toLocaleString('en-GB', {
