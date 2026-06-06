@@ -4,48 +4,59 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Diamond Luxea palette
+       Primary #7B2E8E · Secondary #5E1F6E · Background #F8F5FB · Accent #D9DCE3 · Text #2D2D2D */
+    --background: 276 40% 97%;
+    --foreground: 0 0% 18%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 0 0% 18%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --popover-foreground: 0 0% 18%;
+    --primary: 288 51% 37%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 288 35% 95%;
+    --secondary-foreground: 288 56% 28%;
+    --muted: 276 30% 95%;
+    --muted-foreground: 0 0% 42%;
+    --accent: 222 16% 88%;
+    --accent-foreground: 0 0% 18%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 276 24% 90%;
+    --input: 276 24% 90%;
+    --ring: 288 51% 37%;
+    --radius: 0.75rem;
+
+    /* Brand accents (used for gradients, sidebar, hovers) */
+    --brand: 288 51% 37%;
+    --brand-dark: 288 56% 28%;
+    --brand-foreground: 0 0% 100%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 288 28% 8%;
+    --foreground: 0 0% 96%;
+    --card: 288 24% 12%;
+    --card-foreground: 0 0% 96%;
+    --popover: 288 24% 12%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 288 60% 64%;
+    --primary-foreground: 288 56% 14%;
+    --secondary: 288 22% 20%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 288 18% 18%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 288 20% 24%;
+    --accent-foreground: 0 0% 96%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 288 18% 22%;
+    --input: 288 18% 22%;
+    --ring: 288 60% 64%;
+
+    --brand: 288 51% 45%;
+    --brand-dark: 288 56% 32%;
+    --brand-foreground: 0 0% 100%;
   }
 }
 
@@ -53,7 +64,58 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
   body {
     @apply bg-background text-foreground;
+  }
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+  }
+  /* Slim, branded scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary) / 0.35) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary) / 0.3);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 0.5);
+  }
+}
+
+@layer utilities {
+  .bg-brand-gradient {
+    background-image: linear-gradient(
+      160deg,
+      hsl(var(--brand)) 0%,
+      hsl(var(--brand-dark)) 100%
+    );
+  }
+  .text-brand-gradient {
+    background-image: linear-gradient(
+      90deg,
+      hsl(var(--brand)) 0%,
+      hsl(var(--brand-dark)) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .card-hover {
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .card-hover:hover {
+    box-shadow: 0 10px 30px -12px hsl(var(--brand) / 0.25);
+    transform: translateY(-2px);
   }
 }

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { getBarName, setBarName, BAR_NAME_CHANGE_EVENT } from '@/lib/settings';
 
 export function useBarName() {
-  const [barName, setBarNameState] = useState('Bar Depot');
+  const [barName, setBarNameState] = useState('Diamond Luxea');
 
   useEffect(() => {
     const sync = () => setBarNameState(getBarName());
@@ -14,7 +14,7 @@ export function useBarName() {
   }, []);
 
   const updateBarName = (name: string) => {
-    const value = name.trim() || 'Bar Depot';
+    const value = name.trim() || 'Diamond Luxea';
     setBarName(value);
     setBarNameState(value);
   };

@@ -24,8 +24,8 @@ async function bootstrap() {
 
   // Swagger
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Bar Depot Management API')
-    .setDescription('API for managing bar and depot operations in Cameroon')
+    .setTitle('Diamond Luxea API')
+    .setDescription('API for the Diamond Luxea management system')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -53,7 +53,7 @@ async function bootstrap() {
   expressApp.get('/', (_req, res) => {
     res.json({
       ok: true,
-      service: 'bar-depot-api',
+      service: 'diamond-luxea-api',
       message: 'API is running. JSON endpoints are under /api.',
       health: '/api/health',
       docs: '/api/docs',

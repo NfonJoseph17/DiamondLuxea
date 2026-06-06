@@ -116,9 +116,17 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      {/* Welcome */}
+      <div>
+        <h2 className="font-display text-2xl font-bold tracking-tight text-foreground">
+          Welcome back{user?.fullName ? `, ${user.fullName.split(' ')[0]}` : ''}
+        </h2>
+        <p className="text-sm text-muted-foreground">Here&apos;s what&apos;s happening today.</p>
+      </div>
+
       {/* Quick actions */}
       <div>
-        <h2 className="mb-3 text-sm font-medium text-muted-foreground">Quick actions</h2>
+        <h3 className="mb-3 text-sm font-medium text-muted-foreground">Quick actions</h3>
         <div className="flex flex-wrap gap-2">
           <Button asChild size="sm" variant="default">
             <Link href="/sales">
@@ -147,27 +155,31 @@ export default function DashboardPage() {
 
       {/* Stats cards: Manager = Today's Sales + Today's Profit; Cashier = Today's Sales only */}
       <div className={`grid gap-4 ${isManager ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
-        <Card>
+        <Card className="card-hover overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Today&apos;s Sales</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium text-muted-foreground">Today&apos;s Sales</CardTitle>
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+              <TrendingUp className="h-5 w-5" />
+            </span>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatXaf(todayTotal)}</div>
-            <p className="text-xs text-muted-foreground">
+            <div className="font-display text-3xl font-bold tracking-tight">{formatXaf(todayTotal)}</div>
+            <p className="mt-1 text-xs text-muted-foreground">
               {todaySales.length} sale{todaySales.length !== 1 ? 's' : ''} today
             </p>
           </CardContent>
         </Card>
         {isManager && (
-          <Card>
+          <Card className="card-hover overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Today&apos;s Profit</CardTitle>
-              <DollarSign className="h-4 w-4 text-blue-600" />
+              <CardTitle className="text-sm font-medium text-muted-foreground">Today&apos;s Profit</CardTitle>
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
+                <DollarSign className="h-5 w-5" />
+              </span>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatXaf(todayProfit)}</div>
-              <p className="text-xs text-muted-foreground">
+              <div className="font-display text-3xl font-bold tracking-tight">{formatXaf(todayProfit)}</div>
+              <p className="mt-1 text-xs text-muted-foreground">
                 From today&apos;s sales
               </p>
             </CardContent>

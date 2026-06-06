@@ -39,3 +39,6 @@ apps/api/uploads/
 # Testing
 coverage
 .nyc_output
+
+# Claude Code local config
+.claude/

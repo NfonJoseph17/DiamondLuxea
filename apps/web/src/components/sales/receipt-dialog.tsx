@@ -178,8 +178,8 @@ export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset; print iframe needs <img> */}
             <img
               data-receipt-logo
-              src="/branding/beverlys-lounge-logo.png"
-              alt="Beverly's Lounge"
+              src="/branding/diamond-luxea-logo.png"
+              alt="Diamond Luxea"
               className="receipt-logo max-h-28 w-auto max-w-full object-contain"
             />
           </div>

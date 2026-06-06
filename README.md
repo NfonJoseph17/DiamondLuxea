@@ -1,6 +1,6 @@
-# Bar Depot Management
+# Diamond Luxea
 
-A production-ready monorepo for managing bar and depot operations in Cameroon.
+A production-ready monorepo for the Diamond Luxea management system.
 
 ## Tech Stack
 
@@ -107,10 +107,11 @@ This creates test users:
 
 | Email | Password | Role |
 |-------|----------|------|
-| admin@beverlys.com | *(bcrypt hash in `apps/api/prisma/seed.ts` — change after first login)* | MANAGER |
+| diamondluxea@gmail.com | *(bcrypt hash in `apps/api/prisma/seed.ts` — change after first login)* | MANAGER |
 | cashier@example.com | password123 | CASHIER |
+| sales@example.com | password123 | SALES |
 
-The manager password is not stored in git as plaintext; it is applied when you run `pnpm db:seed` (hash in `seed.ts`). Legacy `manager@example.com` is migrated to `admin@beverlys.com` on seed when needed.
+The manager password is not stored in git as plaintext; it is applied when you run `pnpm db:seed` (hash in `seed.ts`). Legacy `manager@example.com` is migrated to `diamondluxea@gmail.com` on seed when needed.
 
 ## Frontend Auth Flow
 

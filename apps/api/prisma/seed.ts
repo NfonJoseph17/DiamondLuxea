@@ -3,11 +3,11 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-/** Precomputed bcrypt (cost 10) for Beverlys manager — rotate after first login in production. */
+/** Precomputed bcrypt (cost 10) for the Diamond Luxea manager — rotate after first login in production. */
 const MANAGER_SEED_PASSWORD_HASH =
-  '$2b$10$H6ejys7R9FoYIauNZe55ROkbP8QjnEqxZwdcPnqAE2RqhPuO33nTy';
+  '$2b$10$a41ZjiJKzYwaUJOyLqNsCOZSUfbc0i8OtiowpTuoXRYY3HOE3jftm';
 
-const MANAGER_EMAIL = 'admin@beverlys.com';
+const MANAGER_EMAIL = 'diamondluxea@gmail.com';
 const LEGACY_MANAGER_EMAIL = 'manager@example.com';
 
 async function main() {
@@ -29,7 +29,7 @@ async function main() {
       data: {
         email: MANAGER_EMAIL,
         passwordHash: MANAGER_SEED_PASSWORD_HASH,
-        fullName: 'Manager User',
+        fullName: 'Diamond Luxea Admin',
       },
     });
     console.log(`Migrated manager: ${LEGACY_MANAGER_EMAIL} → ${MANAGER_EMAIL}`);
@@ -39,10 +39,10 @@ async function main() {
     where: { email: MANAGER_EMAIL },
     update: {
       passwordHash: MANAGER_SEED_PASSWORD_HASH,
-      fullName: 'Manager User',
+      fullName: 'Diamond Luxea Admin',
     },
     create: {
-      fullName: 'Manager User',
+      fullName: 'Diamond Luxea Admin',
       email: MANAGER_EMAIL,
       passwordHash: MANAGER_SEED_PASSWORD_HASH,
       role: 'MANAGER',

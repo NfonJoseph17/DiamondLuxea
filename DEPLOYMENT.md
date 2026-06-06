@@ -138,7 +138,7 @@ pnpm --filter api exec prisma db seed
 ```
 
 The seed creates:
-- Users (admin@beverlys.com manager, cashier@example.com)
+- Users (diamondluxea@gmail.com manager, cashier@example.com, sales@example.com)
 - Locations (Magasin Principal, Bar Comptoir)
 - Units (bottle, crate, carton, etc.)
 - Products with prices and inventory
@@ -149,8 +149,8 @@ The seed creates:
 ### 3. Verify
 
 - Health check: `GET https://your-api.onrender.com/api/health` — should return `database: "connected"` and `seeded: true`
-- If login shows **Invalid credentials** for `admin@beverlys.com`, check `authUsers` on that same health response: `adminBeverlysCom` should be `true` after `prisma db seed`. If only `legacyManagerExampleCom` is true, run seed once to migrate the manager email and password hash.
-- Login with **admin@beverlys.com** (manager password from seed hash in `prisma/seed.ts`) or **cashier@example.com** / `password123`
+- If login shows **Invalid credentials** for `diamondluxea@gmail.com`, check `authUsers` on that same health response: `managerAccount` should be `true` after `prisma db seed`. If only `legacyManagerExampleCom` is true, run seed once to migrate the manager email and password hash.
+- Login with **diamondluxea@gmail.com** (manager password from seed hash in `prisma/seed.ts`) or **cashier@example.com** / `password123`
 - Products, Stock Status, and Reports should load
 
 ## Railway: Postgres “Data” tab shows empty `users` table

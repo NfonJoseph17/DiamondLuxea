@@ -5,7 +5,7 @@
  *   pnpm prisma:create-user <email> <password> <MANAGER|CASHIER|SALES> [full name]
  *
  * Examples:
- *   pnpm prisma:create-user admin@beverlys.com 'YourSecurePass' MANAGER "Beverlys Admin"
+ *   pnpm prisma:create-user diamondluxea@gmail.com 'YourSecurePass' MANAGER "Diamond Luxea Admin"
  *   DATABASE_URL="postgresql://..." pnpm prisma:create-user ...
  */
 import { PrismaClient, Role } from '@prisma/client';

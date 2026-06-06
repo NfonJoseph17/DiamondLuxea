@@ -13,9 +13,9 @@ export class HealthController {
   async check() {
     let db = 'unknown';
     let seeded = false;
-    /** Helps debug "Invalid credentials" for admin@beverlys.com — no PII beyond booleans. */
+    /** Helps debug "Invalid credentials" for the manager login — no PII beyond booleans. */
     let authUsers: {
-      adminBeverlysCom: boolean;
+      managerAccount: boolean;
       legacyManagerExampleCom: boolean;
     } | undefined;
     try {
@@ -27,7 +27,7 @@ export class HealthController {
 
       const [adminRow, legacyRow] = await Promise.all([
         this.prisma.user.findUnique({
-          where: { email: 'admin@beverlys.com' },
+          where: { email: 'diamondluxea@gmail.com' },
           select: { id: true },
         }),
         this.prisma.user.findUnique({
@@ -36,7 +36,7 @@ export class HealthController {
         }),
       ]);
       authUsers = {
-        adminBeverlysCom: !!adminRow,
+        managerAccount: !!adminRow,
         legacyManagerExampleCom: !!legacyRow,
       };
     } catch (e) {
@@ -45,7 +45,7 @@ export class HealthController {
     return {
       status: db === 'connected' ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
-      service: 'bar-depot-api',
+      service: 'diamond-luxea-api',
       database: db,
       seeded: db === 'connected' ? seeded : undefined,
       authUsers: db === 'connected' ? authUsers : undefined,

@@ -24,7 +24,7 @@ export default function SettingsPage() {
 
   const handleSaveBarName = () => {
     updateBarName(barNameInput);
-    toast('Bar name saved', 'success');
+    toast('Business name saved', 'success');
   };
 
   return (
@@ -63,19 +63,19 @@ export default function SettingsPage() {
       {user?.role === 'MANAGER' && (
         <Card>
           <CardHeader>
-            <CardTitle>Bar / Business</CardTitle>
+            <CardTitle>Business</CardTitle>
             <CardDescription>
-              Your bar name appears on receipts. Edit it here.
+              Your business name appears on receipts and the sidebar. Edit it here.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="barName">Bar name</Label>
+              <Label htmlFor="barName">Business name</Label>
               <Input
                 id="barName"
                 value={barNameInput}
                 onChange={(e) => setBarNameInput(e.target.value)}
-                placeholder="e.g. Bar Depot"
+                placeholder="e.g. Diamond Luxea"
               />
             </div>
             <Button onClick={handleSaveBarName}>Save</Button>
