@@ -71,7 +71,7 @@ function ProductAvatar({
   }
   return (
     <div
-      className={`${dim} flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 text-lg font-bold text-white shadow-inner`}
+      className={`${dim} flex items-center justify-center rounded-full bg-brand-gradient text-lg font-bold text-white shadow-inner`}
     >
       {name.slice(0, 1).toUpperCase()}
     </div>
@@ -321,7 +321,7 @@ export function PosSalesView() {
   if (productsLoading) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-600" />
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
@@ -334,7 +334,7 @@ export function PosSalesView() {
           type="button"
           onClick={clearCart}
           disabled={cart.length === 0}
-          className="flex-1 bg-emerald-700 py-3.5 text-center text-sm font-bold uppercase tracking-wide text-white transition hover:bg-emerald-800 disabled:opacity-40"
+          className="flex-1 bg-brand-dark py-3.5 text-center text-sm font-bold uppercase tracking-wide text-white transition hover:bg-brand-dark/90 disabled:opacity-40"
         >
           Clear
         </button>
@@ -342,7 +342,7 @@ export function PosSalesView() {
           type="button"
           onClick={submitSale}
           disabled={cart.length === 0 || isSubmitting}
-          className="flex flex-[1.4] flex-col items-center justify-center bg-emerald-500 px-2 py-2 text-center text-white transition hover:bg-emerald-600 disabled:opacity-40"
+          className="flex flex-[1.4] flex-col items-center justify-center bg-primary px-2 py-2 text-center text-white transition hover:bg-brand-dark disabled:opacity-40"
         >
           {isSubmitting ? (
             <Loader2 className="h-6 w-6 animate-spin" />
@@ -359,13 +359,13 @@ export function PosSalesView() {
 
       <div className="grid flex-1 gap-4 lg:grid-cols-[1fr_min(400px,38%)] lg:items-start">
         {/* Product picker — no inner max-height: page scroll continues into sale slip below */}
-        <div className="flex flex-col rounded-xl border border-emerald-100/80 bg-gradient-to-b from-white to-emerald-50/30 shadow-sm dark:from-card dark:to-emerald-950/20">
-          <div className="flex flex-col gap-2 border-b border-emerald-100 bg-white/90 p-3 backdrop-blur-sm dark:border-border dark:bg-card/90 sm:flex-row sm:items-center">
+        <div className="flex flex-col rounded-xl border border-border bg-card shadow-sm">
+          <div className="flex flex-col gap-2 border-b border-border bg-card/90 p-3 backdrop-blur-sm sm:flex-row sm:items-center">
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <Select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-10 min-w-[8rem] flex-1 border-emerald-200 bg-white text-sm font-medium dark:border-border dark:bg-background sm:max-w-[200px]"
+                className="h-10 min-w-[8rem] flex-1 text-sm font-medium sm:max-w-[200px]"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -375,12 +375,12 @@ export function PosSalesView() {
               </Select>
             </div>
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-emerald-600/70" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search products…"
-                className="h-10 border-emerald-200 bg-white pl-10 dark:border-border dark:bg-background"
+                className="h-10 pl-10"
               />
             </div>
           </div>
@@ -391,7 +391,7 @@ export function PosSalesView() {
                 No products match your filters.
               </p>
             ) : (
-              <ul className="divide-y divide-emerald-100/80 dark:divide-border">
+              <ul className="divide-y divide-border">
                 {filteredProducts.map((p) => {
                   const price = getPriceForProduct(p);
                   return (
@@ -400,13 +400,13 @@ export function PosSalesView() {
                         type="button"
                         onClick={() => tapProduct(p)}
                         disabled={price == null}
-                        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-emerald-50 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-emerald-950/30"
+                        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-primary/5 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-primary/10"
                       >
                         <ProductAvatar name={p.name} imageUrl={p.imageUrl} size="lg" />
                         <span className="min-w-0 flex-1 font-medium leading-snug text-foreground">
                           {p.name}
                         </span>
-                        <span className="shrink-0 text-right text-sm font-semibold tabular-nums text-emerald-800 dark:text-emerald-300">
+                        <span className="shrink-0 text-right text-sm font-semibold tabular-nums text-primary">
                           {price != null ? formatFcfa(price) : '—'}
                         </span>
                       </button>
@@ -419,10 +419,10 @@ export function PosSalesView() {
         </div>
 
         {/* Sale slip */}
-        <Card className="border-emerald-200/60 shadow-md dark:border-border lg:sticky lg:top-20">
-          <CardHeader className="border-b border-emerald-100 bg-emerald-50/50 pb-3 dark:border-border dark:bg-emerald-950/20">
+        <Card className="shadow-md lg:sticky lg:top-20">
+          <CardHeader className="border-b border-border bg-primary/5 pb-3 dark:bg-primary/10">
             <CardTitle className="flex items-center gap-2 text-base font-semibold">
-              <ShoppingCart className="h-5 w-5 text-emerald-700 dark:text-emerald-400" />
+              <ShoppingCart className="h-5 w-5 text-primary" />
               Sale slip
             </CardTitle>
           </CardHeader>
@@ -436,7 +436,7 @@ export function PosSalesView() {
                 {cart.map((item) => (
                   <li
                     key={`${item.productId}-${item.unitId}`}
-                    className="flex gap-3 rounded-lg border border-emerald-100/80 bg-white p-2 shadow-sm dark:border-border dark:bg-card"
+                    className="flex gap-3 rounded-lg border border-border bg-card p-2 shadow-sm"
                   >
                     <ProductAvatar name={item.productName} imageUrl={item.imageUrl} size="sm" />
                     <div className="min-w-0 flex-1">
@@ -449,7 +449,7 @@ export function PosSalesView() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          className="h-8 w-8 shrink-0 rounded-full border-emerald-200"
+                          className="h-8 w-8 shrink-0 rounded-full"
                           onClick={() =>
                             setLineQty(item.productId, item.unitId, item.quantity - 1)
                           }
@@ -463,14 +463,14 @@ export function PosSalesView() {
                           type="button"
                           variant="outline"
                           size="icon"
-                          className="h-8 w-8 shrink-0 rounded-full border-emerald-200"
+                          className="h-8 w-8 shrink-0 rounded-full"
                           onClick={() =>
                             setLineQty(item.productId, item.unitId, item.quantity + 1)
                           }
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
-                        <span className="ml-auto text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                        <span className="ml-auto text-sm font-bold text-primary">
                           {formatFcfa(item.quantity * item.unitSellingPrice)}
                         </span>
                         <button
@@ -490,9 +490,9 @@ export function PosSalesView() {
 
             {cart.length > 0 && (
               <>
-                <div className="flex items-center justify-between border-t border-emerald-100 pt-3 text-lg font-bold dark:border-border">
+                <div className="flex items-center justify-between border-t border-border pt-3 text-lg font-bold">
                   <span>Total</span>
-                  <span className="text-emerald-700 dark:text-emerald-400">{formatFcfa(total)}</span>
+                  <span className="text-primary">{formatFcfa(total)}</span>
                 </div>
                 <div className="space-y-2">
                   <Label>Note (optional)</Label>
@@ -516,7 +516,7 @@ export function PosSalesView() {
       </div>
 
       {/* Today&apos;s sales */}
-      <Card className="mt-2 border-emerald-100/80 dark:border-border">
+      <Card className="mt-2">
         <CardHeader className="space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base">
