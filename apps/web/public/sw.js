@@ -2,20 +2,49 @@
 /**
  * Diamond Luxea service worker.
  * - Static build assets (/_next/static, icons, fonts): cache-first (immutable).
- * - Pages & RSC navigations (same-origin): network-first, fall back to cache,
- *   then to the cached app shell ("/") so any route boots offline and the SPA
- *   takes over using the persisted React Query cache.
- * - API calls go to a different origin and are intentionally NOT handled here
+ * - Page navigations: network-first, fall back to cache, then to a cached
+ *   shell page so any route boots offline; the SPA then takes over using the
+ *   persisted React Query cache.
+ * - Redirected responses are "cleaned" before caching/serving, because Safari
+ *   refuses a navigation response served by a SW if it came from a redirect
+ *   ("Response served by service worker has redirections"). The app's "/" route
+ *   redirects, so this is required.
+ * - API calls go to another origin and are intentionally NOT handled here
  *   (offline writes are queued by the app's outbox; reads use the query cache).
  */
-const VERSION = 'v2';
+const VERSION = 'v3';
 const STATIC_CACHE = `dl-static-${VERSION}`;
 const PAGES_CACHE = `dl-pages-${VERSION}`;
-const APP_SHELL = '/';
+// Pages cached for offline boot/shell fallback. "/" redirects, so it is
+// stored cleaned (see stripRedirect); /login is the universal fallback.
+const SHELL_URLS = ['/', '/login', '/dashboard', '/sales'];
+
+/** Return a redirect-free copy of a response (Safari rejects redirected nav responses). */
+async function stripRedirect(res) {
+  if (!res || !res.redirected) return res;
+  const body = await res.arrayBuffer();
+  return new Response(body, {
+    status: res.status,
+    statusText: res.statusText,
+    headers: res.headers,
+  });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(PAGES_CACHE).then((cache) => cache.add(APP_SHELL).catch(() => {}))
+    (async () => {
+      const cache = await caches.open(PAGES_CACHE);
+      await Promise.all(
+        SHELL_URLS.map(async (u) => {
+          try {
+            const res = await fetch(u, { redirect: 'follow' });
+            if (res.ok) await cache.put(u, await stripRedirect(res.clone()));
+          } catch {
+            /* best effort */
+          }
+        })
+      );
+    })()
   );
   self.skipWaiting();
 });
@@ -70,7 +99,32 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Network-first for pages / RSC navigations, with offline fallbacks.
+  // Page navigations: network-first, clean redirects, offline shell fallback.
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      (async () => {
+        try {
+          const res = await fetch(request);
+          if (res.ok) {
+            const toCache = await stripRedirect(res.clone());
+            caches.open(PAGES_CACHE).then((c) => c.put(request, toCache));
+          }
+          return await stripRedirect(res);
+        } catch {
+          const cached = await caches.match(request, { ignoreSearch: true });
+          if (cached) return cached;
+          for (const u of SHELL_URLS) {
+            const shell = await caches.match(u);
+            if (shell) return shell;
+          }
+          return Response.error();
+        }
+      })()
+    );
+    return;
+  }
+
+  // Other same-origin GET (e.g. RSC payloads): network-first, cache fallback.
   event.respondWith(
     fetch(request)
       .then((res) => {
@@ -80,15 +134,6 @@ self.addEventListener('fetch', (event) => {
         }
         return res;
       })
-      .catch(async () => {
-        const cached = await caches.match(request);
-        if (cached) return cached;
-        // For full-page navigations, fall back to the cached app shell.
-        if (request.mode === 'navigate') {
-          const shell = await caches.match(APP_SHELL);
-          if (shell) return shell;
-        }
-        return Response.error();
-      })
+      .catch(() => caches.match(request))
   );
 });
