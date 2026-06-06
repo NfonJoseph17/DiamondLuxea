@@ -2,7 +2,7 @@
   "name": "Diamond Luxea",
   "short_name": "Diamond Luxea",
   "description": "Diamond Luxea management system",
-  "start_url": "/",
+  "start_url": "/dashboard",
   "display": "standalone",
   "background_color": "#F8F5FB",
   "theme_color": "#7B2E8E",
