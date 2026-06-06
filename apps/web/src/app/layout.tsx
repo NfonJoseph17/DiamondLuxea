@@ -4,6 +4,7 @@ import './globals.css';
 import { QueryProvider } from '@/lib/query-client';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import { Toaster } from '@/components/ui/toaster';
+import { ServiceWorkerRegistrar } from '@/components/app/service-worker-registrar';
 
 const sans = Plus_Jakarta_Sans({
   subsets: ['latin'],
@@ -54,6 +55,7 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <Toaster />
+            <ServiceWorkerRegistrar />
           </AuthProvider>
         </QueryProvider>
       </body>

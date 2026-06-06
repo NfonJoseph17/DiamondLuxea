@@ -20,6 +20,7 @@ import {
 import Link from 'next/link';
 import { ReceiptDialog } from '@/components/sales/receipt-dialog';
 import { EditSaleDialog } from '@/components/sales/edit-sale-dialog';
+import { InstallAppCard } from '@/components/app/install-app-card';
 import { formatStockQuantityMixed, formatUnitLabel } from '@/lib/utils/units';
 import type { Sale } from '@/types';
 
@@ -326,6 +327,9 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Download / install app */}
+      <InstallAppCard />
 
       <ReceiptDialog
         open={!!receiptSale}
