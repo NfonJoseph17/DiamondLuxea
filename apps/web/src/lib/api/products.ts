@@ -64,7 +64,13 @@ export function updateProduct(id: string, data: UpdateProductPayload) {
   return api.patch<Product>(`/products/${id}`, data);
 }
 
+/** Permanently delete a product (server refuses if it has sales/purchase history). */
 export function deleteProduct(id: string) {
+  return api.delete<{ id: string; deleted: boolean }>(`/products/${id}`);
+}
+
+/** Soft-deactivate a product (kept available for products that can't be deleted). */
+export function deactivateProduct(id: string) {
   return api.patch<Product>(`/products/${id}`, { isActive: false });
 }
 

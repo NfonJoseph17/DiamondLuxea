@@ -83,4 +83,10 @@ export class ProductsController {
   updatePrice(@Param('id') id: string, @Body() dto: UpdatePriceDto) {
     return this.productsService.updatePrice(id, dto);
   }
+
+  @Roles(Role.MANAGER, Role.CASHIER)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.productsService.remove(id);
+  }
 }

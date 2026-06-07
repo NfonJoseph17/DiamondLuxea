@@ -234,4 +234,29 @@ export class ProductsService {
       orderBy: { effectiveFrom: 'desc' },
     });
   }
+
+  /**
+   * Permanently delete a product. Removes its prices, stock balances and image.
+   * Fails with a clear message if the product is referenced by sales/purchases
+   * (deactivate it instead, to keep that history intact).
+   */
+  async remove(id: string) {
+    const product = await this.findOne(id);
+    try {
+      await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+        await tx.inventoryBalance.deleteMany({ where: { productId: id } });
+        await tx.productPriceHistory.deleteMany({ where: { productId: id } });
+        await tx.product.delete({ where: { id } });
+      });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
+        throw new BadRequestException(
+          'This product has sales or purchase history and cannot be deleted. Deactivate it instead.',
+        );
+      }
+      throw e;
+    }
+    this.removeLocalImageFile(product.imageUrl);
+    return { id, deleted: true };
+  }
 }

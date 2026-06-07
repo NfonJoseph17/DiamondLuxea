@@ -27,13 +27,13 @@ export default function ProductsPage() {
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
   async function handleDelete(p: Product) {
-    if (!confirm(`Deactivate "${p.name}"? It will no longer appear in sales.`)) return;
+    if (!confirm(`Delete "${p.name}" permanently? This cannot be undone.`)) return;
     setDeletingId(p.id);
     try {
       await deleteProduct.mutateAsync({ id: p.id });
-      toast('Product deactivated', 'success');
+      toast('Product deleted', 'success');
     } catch (err) {
-      reportMutationError(err, 'Failed to deactivate product');
+      reportMutationError(err, 'Failed to delete product');
     } finally {
       setDeletingId(null);
     }
@@ -183,22 +183,7 @@ export default function ProductsPage() {
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            {product.isActive ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(product)}
-                                disabled={deletingId === product.id}
-                                title="Deactivate product"
-                              >
-                                {deletingId === product.id ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="h-4 w-4" />
-                                )}
-                              </Button>
-                            ) : (
+                            {!product.isActive && (
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -214,6 +199,20 @@ export default function ProductsPage() {
                                 )}
                               </Button>
                             )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(product)}
+                              disabled={deletingId === product.id}
+                              title="Delete product"
+                            >
+                              {deletingId === product.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </td>
                       )}
