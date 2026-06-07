@@ -280,7 +280,7 @@ export async function request<T>(
   // Abort hung requests so a flaky/“online but no internet” connection can't
   // freeze the UI forever — mutations then fall through to the offline queue.
   const controller = new AbortController();
-  const timeoutMs = isMutation ? 9000 : 20000;
+  const timeoutMs = isMutation ? 7000 : 20000;
   const timer =
     typeof window !== 'undefined'
       ? window.setTimeout(() => controller.abort(), timeoutMs)
