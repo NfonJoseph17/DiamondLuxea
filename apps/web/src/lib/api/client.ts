@@ -14,6 +14,23 @@ import { uuid } from '@/lib/utils/uuid';
 
 const API_BASE = normalizePublicApiBase(process.env.NEXT_PUBLIC_API_URL);
 
+/**
+ * Remembers a recent network failure so we can route queue-able mutations to
+ * the offline outbox INSTANTLY instead of waiting for each request to time out
+ * (handles devices that report navigator.onLine === true while truly offline).
+ */
+let lastNetworkFailureAt = 0;
+const OFFLINE_STICKY_MS = 15000;
+function markNetworkFailure() {
+  lastNetworkFailureAt = Date.now();
+}
+function markNetworkOk() {
+  lastNetworkFailureAt = 0;
+}
+function recentlyOffline() {
+  return lastNetworkFailureAt > 0 && Date.now() - lastNetworkFailureAt < OFFLINE_STICKY_MS;
+}
+
 export class ApiError extends Error {
   status: number;
   data: unknown;
@@ -270,7 +287,11 @@ export async function request<T>(
     return handleOfflineOrQueueMutation<T>({ path, method, bodyJson, offlineMeta });
   };
 
-  if (typeof window !== 'undefined' && isMutation && !browserReportsOnline()) {
+  if (
+    typeof window !== 'undefined' &&
+    isMutation &&
+    (!browserReportsOnline() || recentlyOffline())
+  ) {
     if (path.startsWith('/auth')) {
       throw new Error('You are offline. Connect to the internet to sign in or register.');
     }
@@ -290,6 +311,7 @@ export async function request<T>(
   try {
     const fullUrl = `${API_BASE}/api${path}`;
     const res = await fetch(fullUrl, fetchInit);
+    markNetworkOk(); // got a response → network is reachable
 
     if (res.status === 401) {
       const data = await res.json().catch(() => ({}));
@@ -321,6 +343,7 @@ export async function request<T>(
       isAbort ||
       isNetworkError(e) ||
       (e instanceof TypeError && String(e.message).includes('Failed to fetch'));
+    if (looksLikeNetworkFailure) markNetworkFailure();
     if (
       typeof window !== 'undefined' &&
       isMutation &&
