@@ -23,6 +23,17 @@ export class SaleItemDto {
 
   @IsString()
   unitId: string;
+
+  /**
+   * The chosen price tier for this unit (a unit may have several prices).
+   * Validated server-side against the product's configured prices; ignored
+   * if it doesn't match an allowed price.
+   */
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  unitSellingPrice?: number;
 }
 
 export class CreateSaleDto {

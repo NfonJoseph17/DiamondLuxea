@@ -13,7 +13,7 @@ import { useUnits } from '@/lib/hooks/use-units';
 import { createProductSchema, type CreateProductFormData } from '@/lib/validations/product';
 import { toast } from '@/components/ui/toaster';
 import { reportMutationError } from '@/lib/utils/mutation-feedback';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, Trash2 } from 'lucide-react';
 import { AddSupplierDialog } from '@/components/purchases/add-supplier-dialog';
 import { useState } from 'react';
 
@@ -40,13 +40,20 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  // unitId -> price string (optional explicit selling price per unit)
-  const [unitPriceMap, setUnitPriceMap] = useState<Record<string, string>>({});
+  // Optional explicit selling prices; a unit may appear on several rows (tiers).
+  const [unitPriceRows, setUnitPriceRows] = useState<
+    { unitId: string; label: string; price: string }[]
+  >([]);
 
   function buildUnitPrices() {
-    return Object.entries(unitPriceMap)
-      .map(([unitId, v]) => ({ unitId, sellingPrice: Number(String(v).replace(/,/g, '')) }))
-      .filter((u) => u.unitId && String(unitPriceMap[u.unitId]).trim() !== '' && Number.isFinite(u.sellingPrice) && u.sellingPrice >= 0);
+    return unitPriceRows
+      .filter((r) => r.unitId && String(r.price).trim() !== '')
+      .map((r) => ({
+        unitId: r.unitId,
+        sellingPrice: Number(String(r.price).replace(/,/g, '')),
+        label: r.label.trim() || undefined,
+      }))
+      .filter((r) => Number.isFinite(r.sellingPrice) && r.sellingPrice >= 0);
   }
 
   const {
@@ -86,7 +93,7 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
       reset();
       setImageFile(null);
       setImagePreview(null);
-      setUnitPriceMap({});
+      setUnitPriceRows([]);
       onClose();
     } catch (err) {
       reportMutationError(err, 'Failed to create product');
@@ -207,32 +214,84 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
         </div>
 
         <div className="border-t pt-4">
-          <p className="text-sm font-medium">Sell-by-unit prices (optional)</p>
-          <p className="mb-3 text-xs text-muted-foreground">
-            Set the exact price for each unit you sell in (e.g. Crate = 1,800). These appear as one-tap
-            buttons on the sales screen. Leave blank to use the retail/wholesale prices above.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {units?.map((u) => (
-              <div key={u.id} className="flex items-center gap-2">
-                <Label className="w-28 shrink-0 truncate text-sm" title={u.name}>
-                  {u.name}
-                  <span className="text-muted-foreground"> ×{u.conversionValue}</span>
-                </Label>
-                <Input
-                  type="number"
-                  step="1"
-                  min={0}
-                  inputMode="numeric"
-                  placeholder="—"
-                  value={unitPriceMap[u.id] ?? ''}
-                  onChange={(e) =>
-                    setUnitPriceMap((m) => ({ ...m, [u.id]: e.target.value }))
-                  }
-                />
-              </div>
-            ))}
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-sm font-medium">Sell-by-unit prices (optional)</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setUnitPriceRows((rows) => [
+                  ...rows,
+                  { unitId: units?.[0]?.id ?? '', label: '', price: '' },
+                ])
+              }
+            >
+              <Plus className="h-4 w-4" /> Add price
+            </Button>
           </div>
+          <p className="mb-3 mt-1 text-xs text-muted-foreground">
+            Add a price for each unit you sell in. A unit can have several prices — e.g. Pallet
+            “wholesale” 1,900 and Pallet “large wholesale” 1,800 — and each becomes its own button on
+            the sales screen. Leave empty to use the retail/wholesale prices above.
+          </p>
+          {unitPriceRows.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No unit prices yet. Tap “Add price”.</p>
+          ) : (
+            <div className="space-y-2">
+              {unitPriceRows.map((row, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Select
+                    value={row.unitId}
+                    onChange={(e) =>
+                      setUnitPriceRows((rows) =>
+                        rows.map((r, idx) => (idx === i ? { ...r, unitId: e.target.value } : r))
+                      )
+                    }
+                    className="w-24 shrink-0 sm:w-32"
+                  >
+                    {units?.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.name} ×{u.conversionValue}
+                      </option>
+                    ))}
+                  </Select>
+                  <Input
+                    placeholder="Label e.g. wholesale"
+                    value={row.label}
+                    onChange={(e) =>
+                      setUnitPriceRows((rows) =>
+                        rows.map((r, idx) => (idx === i ? { ...r, label: e.target.value } : r))
+                      )
+                    }
+                    className="min-w-0 flex-1"
+                  />
+                  <Input
+                    type="number"
+                    step="1"
+                    min={0}
+                    inputMode="numeric"
+                    placeholder="Price"
+                    value={row.price}
+                    onChange={(e) =>
+                      setUnitPriceRows((rows) =>
+                        rows.map((r, idx) => (idx === i ? { ...r, price: e.target.value } : r))
+                      )
+                    }
+                    className="w-24 shrink-0"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setUnitPriceRows((rows) => rows.filter((_, idx) => idx !== i))}
+                    className="shrink-0 rounded p-2 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    title="Remove price"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">

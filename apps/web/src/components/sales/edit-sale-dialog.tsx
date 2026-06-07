@@ -188,6 +188,7 @@ export function EditSaleDialog({ open, sale, onClose, onSaved }: EditSaleDialogP
             productId: item.productId,
             quantity: item.quantity,
             unitId: item.unitId,
+            unitSellingPrice: item.unitSellingPrice,
           })),
         },
       });

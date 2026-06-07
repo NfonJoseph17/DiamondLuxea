@@ -6,6 +6,7 @@ import {
   Min,
   IsArray,
   ValidateNested,
+  MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -16,6 +17,12 @@ export class UnitPriceItemDto {
   @IsNumber()
   @Min(0)
   sellingPrice: number;
+
+  /** Optional tier name shown on the sales button, e.g. "wholesale". */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  label?: string;
 }
 
 export class CreateProductDto {

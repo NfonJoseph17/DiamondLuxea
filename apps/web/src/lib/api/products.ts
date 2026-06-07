@@ -22,7 +22,7 @@ export function getProduct(id: string) {
   return api.get<Product>(`/products/${id}`);
 }
 
-export type UnitPriceInput = { unitId: string; sellingPrice: number };
+export type UnitPriceInput = { unitId: string; sellingPrice: number; label?: string };
 
 export function createProduct(data: {
   name: string;

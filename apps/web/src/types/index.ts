@@ -41,6 +41,8 @@ export interface Product {
 export interface ProductUnitPrice {
   unitId: string;
   sellingPrice: number;
+  /** Optional tier name, e.g. "wholesale" / "large wholesale". */
+  label?: string | null;
 }
 
 export interface Supplier {

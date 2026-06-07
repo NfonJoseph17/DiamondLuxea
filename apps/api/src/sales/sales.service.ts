@@ -11,7 +11,7 @@ import { DefaultLocationService } from '../common/default-location.service';
 import { CreateSaleDto, SaleItemDto } from './dto/create-sale.dto';
 import { UpdateSalePaymentDto } from './dto/update-sale-payment.dto';
 import { Role, TransactionType } from '../common/constants/roles';
-import { resolveSaleUnitPrice, derivePurchaseUnitPrice } from '../common/pricing.service';
+import { pickSaleUnitPrice, derivePurchaseUnitPrice } from '../common/pricing.service';
 import { adaptPaymentToNewTotal, resolveSalePayment } from './sale-payment.util';
 
 @Injectable()
@@ -101,7 +101,12 @@ export class SalesService {
           name: unit.name,
           conversionValue: unit.conversionValue,
         };
-        const unitSellingPrice = resolveSaleUnitPrice(productPrice, unitInfo, product.unitPrices);
+        const unitSellingPrice = pickSaleUnitPrice(
+          productPrice,
+          unitInfo,
+          product.unitPrices,
+          item.unitSellingPrice,
+        );
         const unitPurchasePriceSnapshot = derivePurchaseUnitPrice(productPrice, unitInfo);
         const quantityInBaseUnits = item.quantity * unit.conversionValue;
 
@@ -267,7 +272,12 @@ export class SalesService {
           unitId: unit.id,
           unitConversionValue: unit.conversionValue,
           unitName: unit.name,
-          unitSellingPrice: resolveSaleUnitPrice(productPrice, unitInfo, product.unitPrices),
+          unitSellingPrice: pickSaleUnitPrice(
+            productPrice,
+            unitInfo,
+            product.unitPrices,
+            item.unitSellingPrice,
+          ),
           unitPurchasePriceSnapshot: derivePurchaseUnitPrice(productPrice, unitInfo),
         });
       }

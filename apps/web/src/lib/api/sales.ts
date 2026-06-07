@@ -10,9 +10,17 @@ export function getSale(id: string) {
   return api.get<Sale>(`/sales/${id}`);
 }
 
+export type SaleItemInput = {
+  productId: string;
+  quantity: number;
+  unitId: string;
+  /** Chosen price tier (a unit can have several); validated server-side. */
+  unitSellingPrice?: number;
+};
+
 export type CreateSaleBody = {
   notes?: string;
-  items: { productId: string; quantity: number; unitId: string }[];
+  items: SaleItemInput[];
   paymentStatus?: PaymentStatus;
   /** Required when paymentStatus is PARTIAL */
   amountPaid?: number;
@@ -26,7 +34,7 @@ export function createSale(data: CreateSaleBody) {
 
 export function updateSale(id: string, data: {
   notes?: string;
-  items: { productId: string; quantity: number; unitId: string }[];
+  items: SaleItemInput[];
   paymentStatus?: PaymentStatus;
   amountPaid?: number;
 }) {

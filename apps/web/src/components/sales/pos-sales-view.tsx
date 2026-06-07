@@ -36,13 +36,20 @@ import type { SalesPaymentReportFilter } from '@/lib/api/reports';
 import type { PaymentStatus, Sale, Product, Unit } from '@/types';
 
 interface CartItem {
+  /** Unique per price tier: a unit can appear at different prices. */
+  key: string;
   productId: string;
   productName: string;
   quantity: number;
   unitId: string;
   unitName: string;
   unitSellingPrice: number;
+  label?: string | null;
   imageUrl?: string | null;
+}
+
+function lineKey(productId: string, unitId: string, price: number) {
+  return `${productId}|${unitId}|${price}`;
 }
 
 function formatFcfa(n: number) {
@@ -139,10 +146,10 @@ export function PosSalesView() {
 
   const total = cart.reduce((sum, item) => sum + item.quantity * item.unitSellingPrice, 0);
 
-  // The units a product can be sold in, each with its price: the base unit
-  // plus any unit that has an explicit per-unit price. One tap = that unit.
+  // Every price the product can be sold at: one entry per configured unit
+  // price (a unit can have several), plus the base unit if it has none.
   const sellableUnitsFor = useCallback(
-    (product: Product): { unit: Unit; price: number }[] => {
+    (product: Product): { unit: Unit; label: string | null; price: number }[] => {
       const ph = product.priceHistory?.find((h) => !h.effectiveTo);
       const baseUnit = product.baseUnit;
       if (!ph || !baseUnit || !units) return [];
@@ -150,65 +157,67 @@ export function PosSalesView() {
       const wholesale =
         ph.wholesalePrice != null ? parseFloat(ph.wholesalePrice) : retail;
 
-      const ids = new Set<string>([baseUnit.id, ...(product.unitPrices ?? []).map((u) => u.unitId)]);
-      const list: { unit: Unit; price: number }[] = [];
-      for (const id of ids) {
-        const unit = units.find((u) => u.id === id);
-        if (!unit) continue;
-        list.push({
-          unit,
-          price: resolveUnitSellingPrice(unit.id, product.unitPrices, {
+      const list: { unit: Unit; label: string | null; price: number }[] = [];
+      for (const up of product.unitPrices ?? []) {
+        const unit = units.find((u) => u.id === up.unitId);
+        if (unit) list.push({ unit, label: up.label ?? null, price: up.sellingPrice });
+      }
+      // Always allow selling the base unit, even with no explicit price set.
+      if (!list.some((e) => e.unit.id === baseUnit.id)) {
+        list.unshift({
+          unit: baseUnit,
+          label: null,
+          price: resolveUnitSellingPrice(baseUnit.id, product.unitPrices, {
             retailPrice: retail,
             wholesalePrice: wholesale,
             baseUnitConversionValue: baseUnit.conversionValue,
-            unitConversionValue: unit.conversionValue,
+            unitConversionValue: baseUnit.conversionValue,
           }),
         });
       }
-      return list.sort((a, b) => a.unit.conversionValue - b.unit.conversionValue);
+      return list.sort(
+        (a, b) => a.unit.conversionValue - b.unit.conversionValue || a.price - b.price
+      );
     },
     [units]
   );
 
-  const addUnitToCart = useCallback((product: Product, unit: Unit, price: number) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.productId === product.id && i.unitId === unit.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.productId === product.id && i.unitId === unit.id
-            ? { ...i, quantity: i.quantity + 1 }
-            : i
-        );
-      }
-      return [
-        ...prev,
-        {
-          productId: product.id,
-          productName: product.name,
-          quantity: 1,
-          unitId: unit.id,
-          unitName: unit.name,
-          unitSellingPrice: price,
-          imageUrl: product.imageUrl,
-        },
-      ];
-    });
-  }, []);
+  const addUnitToCart = useCallback(
+    (product: Product, unit: Unit, price: number, label: string | null) => {
+      const key = lineKey(product.id, unit.id, price);
+      setCart((prev) => {
+        if (prev.some((i) => i.key === key)) {
+          return prev.map((i) => (i.key === key ? { ...i, quantity: i.quantity + 1 } : i));
+        }
+        return [
+          ...prev,
+          {
+            key,
+            productId: product.id,
+            productName: product.name,
+            quantity: 1,
+            unitId: unit.id,
+            unitName: unit.name,
+            unitSellingPrice: price,
+            label,
+            imageUrl: product.imageUrl,
+          },
+        ];
+      });
+    },
+    []
+  );
 
-  function setLineQty(productId: string, unitId: string, qty: number) {
+  function setLineQty(key: string, qty: number) {
     if (qty < 1) {
-      setCart((c) => c.filter((i) => !(i.productId === productId && i.unitId === unitId)));
+      setCart((c) => c.filter((i) => i.key !== key));
       return;
     }
-    setCart((c) =>
-      c.map((i) =>
-        i.productId === productId && i.unitId === unitId ? { ...i, quantity: qty } : i
-      )
-    );
+    setCart((c) => c.map((i) => (i.key === key ? { ...i, quantity: qty } : i)));
   }
 
-  function removeFromCart(productId: string, unitId: string) {
-    setCart((c) => c.filter((i) => !(i.productId === productId && i.unitId === unitId)));
+  function removeFromCart(key: string) {
+    setCart((c) => c.filter((i) => i.key !== key));
   }
 
   function clearCart() {
@@ -244,6 +253,7 @@ export function PosSalesView() {
           productId: item.productId,
           quantity: item.quantity,
           unitId: item.unitId,
+          unitSellingPrice: item.unitSellingPrice,
         })),
         _offlineSaleLines: cart.map((item) => {
           const unit = units?.find((u) => u.id === item.unitId);
@@ -387,15 +397,16 @@ export function PosSalesView() {
                             {sellable.length === 0 ? (
                               <span className="text-xs text-muted-foreground">No price set</span>
                             ) : (
-                              sellable.map(({ unit, price }) => (
+                              sellable.map(({ unit, label, price }) => (
                                 <button
-                                  key={unit.id}
+                                  key={`${unit.id}|${price}`}
                                   type="button"
-                                  onClick={() => addUnitToCart(p, unit, price)}
+                                  onClick={() => addUnitToCart(p, unit, price, label)}
                                   className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white active:scale-95"
-                                  title={`Add 1 ${unit.name}`}
+                                  title={`Add 1 ${unit.name}${label ? ` (${label})` : ''}`}
                                 >
                                   <span className="capitalize">{unit.name}</span>
+                                  {label ? <span className="font-normal opacity-80"> {label}</span> : null}
                                   <span className="mx-1 opacity-50">·</span>
                                   <span className="tabular-nums">{formatFcfa(price)}</span>
                                 </button>
@@ -429,14 +440,15 @@ export function PosSalesView() {
               <ul className="space-y-3">
                 {cart.map((item) => (
                   <li
-                    key={`${item.productId}-${item.unitId}`}
+                    key={item.key}
                     className="flex gap-3 rounded-lg border border-border bg-card p-2 shadow-sm"
                   >
                     <ProductAvatar name={item.productName} imageUrl={item.imageUrl} size="sm" />
                     <div className="min-w-0 flex-1">
                       <p className="font-medium leading-tight">{item.productName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatFcfa(item.unitSellingPrice)} · {item.unitName}
+                        {formatFcfa(item.unitSellingPrice)} · <span className="capitalize">{item.unitName}</span>
+                        {item.label ? <span> ({item.label})</span> : null}
                       </p>
                       <div className="mt-2 flex items-center gap-2">
                         <Button
@@ -444,9 +456,7 @@ export function PosSalesView() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8 shrink-0 rounded-full"
-                          onClick={() =>
-                            setLineQty(item.productId, item.unitId, item.quantity - 1)
-                          }
+                          onClick={() => setLineQty(item.key, item.quantity - 1)}
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
@@ -458,9 +468,7 @@ export function PosSalesView() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8 shrink-0 rounded-full"
-                          onClick={() =>
-                            setLineQty(item.productId, item.unitId, item.quantity + 1)
-                          }
+                          onClick={() => setLineQty(item.key, item.quantity + 1)}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -469,7 +477,7 @@ export function PosSalesView() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(item.productId, item.unitId)}
+                          onClick={() => removeFromCart(item.key)}
                           className="rounded p-1.5 text-destructive hover:bg-destructive/10"
                           title="Remove line"
                         >
