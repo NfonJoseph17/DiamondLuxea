@@ -40,6 +40,14 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
   const [showAddSupplier, setShowAddSupplier] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  // unitId -> price string (optional explicit selling price per unit)
+  const [unitPriceMap, setUnitPriceMap] = useState<Record<string, string>>({});
+
+  function buildUnitPrices() {
+    return Object.entries(unitPriceMap)
+      .map(([unitId, v]) => ({ unitId, sellingPrice: Number(String(v).replace(/,/g, '')) }))
+      .filter((u) => u.unitId && String(unitPriceMap[u.unitId]).trim() !== '' && Number.isFinite(u.sellingPrice) && u.sellingPrice >= 0);
+  }
 
   const {
     register,
@@ -65,6 +73,7 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
         retailPrice: data.retailPrice,
         wholesalePrice: data.wholesalePrice,
         defaultSupplierId: data.defaultSupplierId || undefined,
+        unitPrices: buildUnitPrices(),
       });
       if (imageFile && created?.id) {
         try {
@@ -77,6 +86,7 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
       reset();
       setImageFile(null);
       setImagePreview(null);
+      setUnitPriceMap({});
       onClose();
     } catch (err) {
       reportMutationError(err, 'Failed to create product');
@@ -193,6 +203,35 @@ export function AddProductDialog({ open, onClose }: AddProductDialogProps) {
               <Input id="wholesalePrice" type="number" step="1" {...register('wholesalePrice')} placeholder="0" />
               {errors.wholesalePrice && <p className="text-sm text-destructive">{errors.wholesalePrice.message}</p>}
             </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-sm font-medium">Sell-by-unit prices (optional)</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Set the exact price for each unit you sell in (e.g. Crate = 1,800). These appear as one-tap
+            buttons on the sales screen. Leave blank to use the retail/wholesale prices above.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {units?.map((u) => (
+              <div key={u.id} className="flex items-center gap-2">
+                <Label className="w-28 shrink-0 truncate text-sm" title={u.name}>
+                  {u.name}
+                  <span className="text-muted-foreground"> ×{u.conversionValue}</span>
+                </Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="—"
+                  value={unitPriceMap[u.id] ?? ''}
+                  onChange={(e) =>
+                    setUnitPriceMap((m) => ({ ...m, [u.id]: e.target.value }))
+                  }
+                />
+              </div>
+            ))}
           </div>
         </div>
 

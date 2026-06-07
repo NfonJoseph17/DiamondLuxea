@@ -51,6 +51,13 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
   const { data: suppliers } = useSuppliers();
   const { data: units } = useUnits();
   const [showAddSupplier, setShowAddSupplier] = useState(false);
+  const [unitPriceMap, setUnitPriceMap] = useState<Record<string, string>>({});
+
+  function buildUnitPrices() {
+    return Object.entries(unitPriceMap)
+      .map(([unitId, v]) => ({ unitId, sellingPrice: Number(String(v).replace(/,/g, '')) }))
+      .filter((u) => u.unitId && String(unitPriceMap[u.unitId]).trim() !== '' && Number.isFinite(u.sellingPrice) && u.sellingPrice >= 0);
+  }
 
   const {
     register,
@@ -103,6 +110,11 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
           wholesalePrice: parseFloat(ph.wholesalePrice),
         });
       }
+      const map: Record<string, string> = {};
+      for (const up of product.unitPrices ?? []) {
+        map[up.unitId] = String(up.sellingPrice);
+      }
+      setUnitPriceMap(map);
     }
   }, [product, reset, resetPrice, open]);
 
@@ -123,6 +135,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
           lowStockLevel: data.lowStockLevel,
           isActive: data.isActive,
           defaultSupplierId: data.defaultSupplierId || undefined,
+          unitPrices: buildUnitPrices(),
         },
       });
       await updateProductPrice.mutateAsync({
@@ -216,7 +229,7 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
                 className="h-24 w-24 rounded-full object-cover border-2 border-background shadow-md"
               />
             ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-emerald-100 text-2xl font-bold text-emerald-800 border-2 border-dashed border-emerald-300">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary border-2 border-dashed border-primary/30">
                 {product.name.slice(0, 1).toUpperCase()}
               </div>
             )}
@@ -336,6 +349,36 @@ export function EditProductDialog({ open, product, onClose }: EditProductDialogP
                 Update Prices
               </Button>
             </div>
+          </div>
+        </div>
+
+        <div className="border-t pt-4">
+          <p className="text-sm font-medium">Sell-by-unit prices (optional)</p>
+          <p className="mb-3 text-xs text-muted-foreground">
+            Set the exact price for each unit you sell in (e.g. Crate = 1,800). These appear as one-tap
+            buttons on the sales screen. Leave blank to use the retail/wholesale prices above. Saved with
+            “Save Changes”.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {units?.map((u) => (
+              <div key={u.id} className="flex items-center gap-2">
+                <Label className="w-28 shrink-0 truncate text-sm" title={u.name}>
+                  {u.name}
+                  <span className="text-muted-foreground"> ×{u.conversionValue}</span>
+                </Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min={0}
+                  inputMode="numeric"
+                  placeholder="—"
+                  value={unitPriceMap[u.id] ?? ''}
+                  onChange={(e) =>
+                    setUnitPriceMap((m) => ({ ...m, [u.id]: e.target.value }))
+                  }
+                />
+              </div>
+            ))}
           </div>
         </div>
 

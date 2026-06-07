@@ -33,7 +33,14 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   priceHistory?: ProductPrice[];
+  /** Explicit selling price per unit; units not listed use derived pricing. */
+  unitPrices?: ProductUnitPrice[] | null;
   inventoryBalance?: InventoryBalance[];
+}
+
+export interface ProductUnitPrice {
+  unitId: string;
+  sellingPrice: number;
 }
 
 export interface Supplier {

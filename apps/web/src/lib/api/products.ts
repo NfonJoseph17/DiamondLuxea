@@ -22,6 +22,8 @@ export function getProduct(id: string) {
   return api.get<Product>(`/products/${id}`);
 }
 
+export type UnitPriceInput = { unitId: string; sellingPrice: number };
+
 export function createProduct(data: {
   name: string;
   category: string;
@@ -33,6 +35,7 @@ export function createProduct(data: {
   retailPrice: number;
   wholesalePrice: number;
   defaultSupplierId?: string;
+  unitPrices?: UnitPriceInput[];
 }) {
   return api.post<Product>('/products', data);
 }
@@ -46,6 +49,7 @@ export type UpdateProductPayload = {
   lowStockLevel?: number;
   isActive?: boolean;
   defaultSupplierId?: string;
+  unitPrices?: UnitPriceInput[];
 };
 
 export function updateProductPrice(id: string, data: {

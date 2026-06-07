@@ -1,4 +1,14 @@
-import { IsString, IsOptional, IsInt, IsBoolean, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsBoolean,
+  Min,
+  IsArray,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+import { UnitPriceItemDto } from './create-product.dto';
 
 export class UpdateProductDto {
   @IsOptional()
@@ -33,6 +43,12 @@ export class UpdateProductDto {
   @IsOptional()
   @IsString()
   defaultSupplierId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UnitPriceItemDto)
+  unitPrices?: UnitPriceItemDto[];
 
   @IsOptional()
   @IsString()

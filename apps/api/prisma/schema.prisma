@@ -139,6 +139,9 @@ model Product {
   description        String?
   imageUrl           String?   @map("image_url") // e.g. /api/uploads/products/... or external https URL
   lowStockLevel      Int       @default(10) @map("low_stock_level")
+  // Explicit selling price per unit: [{ "unitId": "...", "sellingPrice": 1800 }]
+  // Units not listed fall back to derived retail/wholesale pricing.
+  unitPrices         Json?     @map("unit_prices")
   isActive           Boolean   @default(true) @map("is_active")
   defaultSupplierId  String?   @map("default_supplier_id")
   createdAt          DateTime  @default(now()) @map("created_at")

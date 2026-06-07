@@ -27,13 +27,13 @@ import {
   Plus,
 } from 'lucide-react';
 import { formatUnitLabel } from '@/lib/utils/units';
-import { deriveSaleUnitPrice, derivePurchaseUnitPrice } from '@/lib/utils/pricing';
+import { resolveUnitSellingPrice, derivePurchaseUnitPrice } from '@/lib/utils/pricing';
 import { publicProductImageUrl } from '@/lib/utils/product-image';
 import { ReceiptDialog } from '@/components/sales/receipt-dialog';
 import { EditSaleDialog } from '@/components/sales/edit-sale-dialog';
 import { SalePaymentFields, validatePartialPayment } from '@/components/sales/sale-payment-fields';
 import type { SalesPaymentReportFilter } from '@/lib/api/reports';
-import type { PaymentStatus, Sale, Product } from '@/types';
+import type { PaymentStatus, Sale, Product, Unit } from '@/types';
 
 interface CartItem {
   productId: string;
@@ -109,11 +109,6 @@ export function PosSalesView() {
   const [expandedSaleId, setExpandedSaleId] = useState<string | null>(null);
   const [listPaymentFilter, setListPaymentFilter] = useState<SalesPaymentReportFilter>('all');
 
-  const defaultUnit = useMemo(
-    () => units?.find((u) => u.name.toLowerCase() === 'bottle') ?? units?.[0],
-    [units]
-  );
-
   const categories = useMemo(() => {
     const set = new Set<string>();
     products?.forEach((p) => set.add(p.category));
@@ -144,71 +139,61 @@ export function PosSalesView() {
 
   const total = cart.reduce((sum, item) => sum + item.quantity * item.unitSellingPrice, 0);
 
-  const getPriceForProduct = useCallback(
-    (product: Product): number | null => {
-      const unitId = defaultUnit?.id;
+  // The units a product can be sold in, each with its price: the base unit
+  // plus any unit that has an explicit per-unit price. One tap = that unit.
+  const sellableUnitsFor = useCallback(
+    (product: Product): { unit: Unit; price: number }[] => {
       const ph = product.priceHistory?.find((h) => !h.effectiveTo);
-      const unit = units?.find((u) => u.id === unitId);
       const baseUnit = product.baseUnit;
-      if (!ph || !unit || !baseUnit) return null;
+      if (!ph || !baseUnit || !units) return [];
       const retail = parseFloat(ph.retailPrice ?? '0');
       const wholesale =
         ph.wholesalePrice != null ? parseFloat(ph.wholesalePrice) : retail;
-      return deriveSaleUnitPrice(
-        retail,
-        wholesale,
-        baseUnit.conversionValue,
-        unit.conversionValue
-      );
-    },
-    [defaultUnit, units]
-  );
 
-  const tapProduct = useCallback(
-    (product: Product) => {
-      const unitId = defaultUnit?.id;
-      const unit = units?.find((u) => u.id === unitId);
-      const ph = product.priceHistory?.find((h) => !h.effectiveTo);
-      const baseUnit = product.baseUnit;
-      if (!unitId || !unit || !ph || !baseUnit) {
-        toast('Product is missing price or unit setup', 'error');
-        return;
+      const ids = new Set<string>([baseUnit.id, ...(product.unitPrices ?? []).map((u) => u.unitId)]);
+      const list: { unit: Unit; price: number }[] = [];
+      for (const id of ids) {
+        const unit = units.find((u) => u.id === id);
+        if (!unit) continue;
+        list.push({
+          unit,
+          price: resolveUnitSellingPrice(unit.id, product.unitPrices, {
+            retailPrice: retail,
+            wholesalePrice: wholesale,
+            baseUnitConversionValue: baseUnit.conversionValue,
+            unitConversionValue: unit.conversionValue,
+          }),
+        });
       }
-      const retail = parseFloat(ph.retailPrice ?? '0');
-      const wholesale =
-        ph.wholesalePrice != null ? parseFloat(ph.wholesalePrice) : retail;
-      const unitPrice = deriveSaleUnitPrice(
-        retail,
-        wholesale,
-        baseUnit.conversionValue,
-        unit.conversionValue
-      );
-
-      setCart((prev) => {
-        const existing = prev.find((i) => i.productId === product.id && i.unitId === unitId);
-        if (existing) {
-          return prev.map((i) =>
-            i.productId === product.id && i.unitId === unitId
-              ? { ...i, quantity: i.quantity + 1 }
-              : i
-          );
-        }
-        return [
-          ...prev,
-          {
-            productId: product.id,
-            productName: product.name,
-            quantity: 1,
-            unitId,
-            unitName: unit.name,
-            unitSellingPrice: unitPrice,
-            imageUrl: product.imageUrl,
-          },
-        ];
-      });
+      return list.sort((a, b) => a.unit.conversionValue - b.unit.conversionValue);
     },
-    [defaultUnit, units]
+    [units]
   );
+
+  const addUnitToCart = useCallback((product: Product, unit: Unit, price: number) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.productId === product.id && i.unitId === unit.id);
+      if (existing) {
+        return prev.map((i) =>
+          i.productId === product.id && i.unitId === unit.id
+            ? { ...i, quantity: i.quantity + 1 }
+            : i
+        );
+      }
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          productName: product.name,
+          quantity: 1,
+          unitId: unit.id,
+          unitName: unit.name,
+          unitSellingPrice: price,
+          imageUrl: product.imageUrl,
+        },
+      ];
+    });
+  }, []);
 
   function setLineQty(productId: string, unitId: string, qty: number) {
     if (qty < 1) {
@@ -391,23 +376,34 @@ export function PosSalesView() {
             ) : (
               <ul className="divide-y divide-border">
                 {filteredProducts.map((p) => {
-                  const price = getPriceForProduct(p);
+                  const sellable = sellableUnitsFor(p);
                   return (
-                    <li key={p.id}>
-                      <button
-                        type="button"
-                        onClick={() => tapProduct(p)}
-                        disabled={price == null}
-                        className="flex w-full items-center gap-3 px-3 py-3 text-left transition hover:bg-primary/5 active:scale-[0.995] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-primary/10"
-                      >
+                    <li key={p.id} className="px-3 py-3">
+                      <div className="flex items-start gap-3">
                         <ProductAvatar name={p.name} imageUrl={p.imageUrl} size="lg" />
-                        <span className="min-w-0 flex-1 font-medium leading-snug text-foreground">
-                          {p.name}
-                        </span>
-                        <span className="shrink-0 text-right text-sm font-semibold tabular-nums text-primary">
-                          {price != null ? formatFcfa(price) : '—'}
-                        </span>
-                      </button>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium leading-snug text-foreground">{p.name}</p>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {sellable.length === 0 ? (
+                              <span className="text-xs text-muted-foreground">No price set</span>
+                            ) : (
+                              sellable.map(({ unit, price }) => (
+                                <button
+                                  key={unit.id}
+                                  type="button"
+                                  onClick={() => addUnitToCart(p, unit, price)}
+                                  className="rounded-lg border border-primary/30 bg-primary/5 px-2.5 py-1 text-xs font-semibold text-primary transition hover:bg-primary hover:text-white active:scale-95"
+                                  title={`Add 1 ${unit.name}`}
+                                >
+                                  <span className="capitalize">{unit.name}</span>
+                                  <span className="mx-1 opacity-50">·</span>
+                                  <span className="tabular-nums">{formatFcfa(price)}</span>
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
                     </li>
                   );
                 })}

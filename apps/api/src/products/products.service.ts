@@ -37,7 +37,8 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
-    const { purchasePrice, retailPrice, wholesalePrice, imageUrl, ...productData } = dto;
+    const { purchasePrice, retailPrice, wholesalePrice, imageUrl, unitPrices, ...productData } =
+      dto;
 
     const baseUnit = await this.prisma.unit.findUnique({
       where: { id: dto.baseUnitId },
@@ -61,6 +62,7 @@ export class ProductsService {
           ...productData,
           unitType: unitType as 'BOTTLE' | 'CRATE' | 'CARTON' | 'CAN' | 'UNIT',
           ...(imageUrl?.trim() ? { imageUrl: imageUrl.trim() } : {}),
+          ...(unitPrices ? { unitPrices: unitPrices as unknown as Prisma.InputJsonValue } : {}),
         },
       });
 

@@ -4,7 +4,19 @@ import {
   IsInt,
   IsNumber,
   Min,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class UnitPriceItemDto {
+  @IsString()
+  unitId: string;
+
+  @IsNumber()
+  @Min(0)
+  sellingPrice: number;
+}
 
 export class CreateProductDto {
   @IsString()
@@ -44,6 +56,13 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   defaultSupplierId?: string;
+
+  /** Explicit selling price per unit (overrides derived retail/wholesale). */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => UnitPriceItemDto)
+  unitPrices?: UnitPriceItemDto[];
 
   /** Public path (/api/uploads/...) or external https image URL */
   @IsOptional()
