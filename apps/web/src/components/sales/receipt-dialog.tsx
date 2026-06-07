@@ -15,6 +15,7 @@ interface ReceiptDialogProps {
 
 /** Business details printed on every receipt. */
 const BUSINESS = {
+  name: 'Diamond Luxea',
   taxNo: 'P089617617668730B',
   tel: '6 72 06 06 41 / 651 40 09 38',
   location: 'Krate Opposite Marcson Hotel, Limbe',
@@ -47,6 +48,14 @@ const RECEIPT_PRINT_STYLES = `
     display: inline-block;
     vertical-align: middle;
     object-fit: contain;
+  }
+  .receipt-business {
+    text-align: center;
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.01em;
+    margin: 2px 0 6px;
+    color: #000;
   }
   .receipt-info {
     text-align: center;
@@ -202,6 +211,9 @@ export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
               alt=""
               className="receipt-logo max-h-24 w-auto max-w-full object-contain"
             />
+          </div>
+          <div className="receipt-business text-center font-display text-xl font-extrabold tracking-tight text-foreground mb-1">
+            {BUSINESS.name}
           </div>
           <div className="receipt-info text-center text-[0.8rem] leading-snug text-foreground mb-3">
             <div>
