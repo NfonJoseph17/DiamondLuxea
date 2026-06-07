@@ -277,6 +277,16 @@ export async function request<T>(
     return runMutationOffline();
   }
 
+  // Abort hung requests so a flaky/“online but no internet” connection can't
+  // freeze the UI forever — mutations then fall through to the offline queue.
+  const controller = new AbortController();
+  const timeoutMs = isMutation ? 9000 : 20000;
+  const timer =
+    typeof window !== 'undefined'
+      ? window.setTimeout(() => controller.abort(), timeoutMs)
+      : undefined;
+  fetchInit.signal = controller.signal;
+
   try {
     const fullUrl = `${API_BASE}/api${path}`;
     const res = await fetch(fullUrl, fetchInit);
@@ -306,7 +316,9 @@ export async function request<T>(
   } catch (e) {
     // Auth must never use the offline outbox. A failed login fetch is usually CORS or wrong API URL,
     // not "offline" — routing it there showed a misleading message.
+    const isAbort = (e as { name?: string } | null)?.name === 'AbortError';
     const looksLikeNetworkFailure =
+      isAbort ||
       isNetworkError(e) ||
       (e instanceof TypeError && String(e.message).includes('Failed to fetch'));
     if (
@@ -322,7 +334,12 @@ export async function request<T>(
         throw q;
       }
     }
+    if (isAbort) {
+      throw new ApiError('Network timed out. Check your connection and try again.', 0, e);
+    }
     throw e;
+  } finally {
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 

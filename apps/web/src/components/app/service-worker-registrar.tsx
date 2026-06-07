@@ -17,9 +17,17 @@ export function ServiceWorkerRegistrar() {
       return;
     }
     const onLoad = () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {
-        /* registration is best-effort; app still works without it */
-      });
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then(() => navigator.serviceWorker.ready)
+        .then(() => {
+          // Ask the active worker to download all assets for offline use
+          // (covers first install and refreshing after a new deploy).
+          navigator.serviceWorker.controller?.postMessage({ type: 'PRECACHE' });
+        })
+        .catch(() => {
+          /* registration is best-effort; app still works without it */
+        });
     };
     window.addEventListener('load', onLoad);
     return () => window.removeEventListener('load', onLoad);

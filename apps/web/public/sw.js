@@ -19,6 +19,29 @@ const PAGES_CACHE = `dl-pages-${VERSION}`;
 // stored cleaned (see stripRedirect); /login is the universal fallback.
 const SHELL_URLS = ['/', '/login', '/dashboard', '/sales'];
 
+/**
+ * Download every build asset listed in /sw-precache.json so the whole app is
+ * available offline after the first online load. Only fetches assets not
+ * already cached, so repeat calls (on new deploys) are cheap.
+ */
+async function precacheAllAssets() {
+  try {
+    const res = await fetch('/sw-precache.json', { cache: 'no-cache' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const assets = Array.isArray(data.assets) ? data.assets : [];
+    const cache = await caches.open(STATIC_CACHE);
+    await Promise.allSettled(
+      assets.map(async (url) => {
+        const hit = await cache.match(url);
+        if (!hit) await cache.add(url);
+      })
+    );
+  } catch {
+    /* best effort — app still works via lazy caching */
+  }
+}
+
 /** Return a redirect-free copy of a response (Safari rejects redirected nav responses). */
 async function stripRedirect(res) {
   if (!res || !res.redirected) return res;
@@ -44,9 +67,18 @@ self.addEventListener('install', (event) => {
           }
         })
       );
+      // Download all JS/CSS/font assets up front for full offline support.
+      await precacheAllAssets();
     })()
   );
   self.skipWaiting();
+});
+
+// Lets the page ask the SW to (re)download assets, e.g. after a new deploy.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'PRECACHE') {
+    event.waitUntil(precacheAllAssets());
+  }
 });
 
 self.addEventListener('activate', (event) => {

@@ -42,3 +42,6 @@ coverage
 
 # Claude Code local config
 .claude/
+
+# Generated PWA precache manifest
+apps/web/public/sw-precache.json
