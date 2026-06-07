@@ -5,7 +5,6 @@ import { Dialog, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { Sale } from '@/types';
 import { formatUnitLabel } from '@/lib/utils/units';
-import { useBarName } from '@/lib/hooks/use-bar-settings';
 import { Printer } from 'lucide-react';
 
 interface ReceiptDialogProps {
@@ -14,13 +13,20 @@ interface ReceiptDialogProps {
   onClose: () => void;
 }
 
+/** Business details printed on every receipt. */
+const BUSINESS = {
+  taxNo: 'P089617617668730B',
+  tel: '6 72 06 06 41 / 651 40 09 38',
+  location: 'Krate Opposite Marcson Hotel, Limbe',
+};
+
 /** Styles for the isolated print document (screen + paper). */
 const RECEIPT_PRINT_STYLES = `
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    padding: 16px;
+    padding: 16px 18px;
     max-width: 320px;
     margin: 0 auto;
     color: #000;
@@ -28,44 +34,48 @@ const RECEIPT_PRINT_STYLES = `
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+  /* margin:0 suppresses the browser's auto URL/date header & footer on the printout */
   @page {
     size: auto;
-    margin: 12mm;
+    margin: 0;
   }
-  .receipt-logo-wrap { text-align: center; margin-bottom: 12px; }
+  .receipt-logo-wrap { text-align: center; margin-bottom: 8px; }
   .receipt-logo {
-    max-height: 120px;
+    max-height: 96px;
     width: auto;
     max-width: 100%;
     display: inline-block;
     vertical-align: middle;
     object-fit: contain;
   }
-  .receipt-business {
+  .receipt-info {
     text-align: center;
-    font-weight: 700;
-    font-size: 1.25rem;
-    letter-spacing: -0.01em;
-    margin: 0 0 4px;
-    color: #000;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    color: #111;
+    margin: 0 0 10px;
   }
-            .receipt-meta { font-size: 0.875rem; color: #444; text-align: center; margin-bottom: 12px; }
-            .receipt-pay { font-size: 0.875rem; text-align: center; margin-bottom: 12px; padding: 8px; background: #f5f5f5; border-radius: 6px; }
-            .receipt-pay strong { display: block; margin-bottom: 4px; }
-  table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-  th { text-align: left; padding: 4px 0; border-bottom: 1px solid #ccc; }
-  td { padding: 4px 0; }
-  td:last-child { text-align: right; }
+  .receipt-info .lbl { font-weight: 700; }
+  .receipt-divider { border: 0; border-top: 1px dashed #aaa; margin: 10px 0; }
+  .receipt-meta { font-size: 0.8rem; color: #333; text-align: center; margin-bottom: 2px; }
+  .receipt-saleno { font-size: 0.72rem; color: #555; text-align: center; margin-bottom: 10px; letter-spacing: 0.02em; }
+  .receipt-pay { font-size: 0.8rem; text-align: center; margin-bottom: 10px; padding: 8px; background: #f4f4f4; border-radius: 6px; }
+  .receipt-pay strong { display: block; margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { text-align: left; padding: 5px 0; border-bottom: 1px solid #bbb; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: #444; }
+  td { padding: 5px 0; vertical-align: top; }
+  th:last-child, td:last-child { text-align: right; }
+  tbody tr { border-bottom: 1px dotted #ddd; }
   .total-row {
-    font-weight: bold;
-    font-size: 1rem;
+    font-weight: 800;
+    font-size: 1.05rem;
     border-top: 2px solid #000;
     padding-top: 8px;
-    margin-top: 8px;
+    margin-top: 10px;
     display: flex;
     justify-content: space-between;
   }
-  .thanks { text-align: center; margin-top: 16px; font-size: 0.875rem; color: #444; }
+  .thanks { text-align: center; margin-top: 14px; font-size: 0.8rem; color: #444; }
 `;
 
 function buildPrintDocument(printContent: string): string {
@@ -74,7 +84,7 @@ function buildPrintDocument(printContent: string): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Receipt</title>
+    <title> </title>
     <style>${RECEIPT_PRINT_STYLES}</style>
   </head>
   <body>${printContent}</body>
@@ -100,7 +110,6 @@ function whenImagesReady(doc: Document): Promise<void> {
 
 export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
   const printRef = useRef<HTMLDivElement>(null);
-  const { barName } = useBarName();
 
   /**
    * Opens the OS / browser print dialog so the cashier can pick any connected printer
@@ -185,25 +194,32 @@ export function ReceiptDialog({ open, sale, onClose }: ReceiptDialogProps) {
       </DialogHeader>
       <div className="space-y-4">
         <div ref={printRef} className="receipt-content">
-          <div className="receipt-logo-wrap flex justify-center mb-3">
+          <div className="receipt-logo-wrap flex justify-center mb-2">
             {/* eslint-disable-next-line @next/next/no-img-element -- static public asset; print iframe needs <img> */}
             <img
               data-receipt-logo
               src="/branding/diamond-luxea-logo.png"
-              alt={barName}
-              className="receipt-logo max-h-28 w-auto max-w-full object-contain"
+              alt=""
+              className="receipt-logo max-h-24 w-auto max-w-full object-contain"
             />
           </div>
-          <div className="receipt-business text-center font-display text-xl font-bold tracking-tight text-foreground mb-2">
-            {barName}
+          <div className="receipt-info text-center text-[0.8rem] leading-snug text-foreground mb-3">
+            <div>
+              <span className="lbl font-semibold">TAX NO:</span> {BUSINESS.taxNo}
+            </div>
+            <div>
+              <span className="lbl font-semibold">TEL:</span> {BUSINESS.tel}
+            </div>
+            <div>{BUSINESS.location}</div>
           </div>
+          <hr className="receipt-divider border-0 border-t border-dashed border-muted-foreground/40 my-3" />
           <div className="receipt-meta text-center text-sm text-muted-foreground">
             {soldAt.toLocaleString('en-GB', {
               dateStyle: 'medium',
               timeStyle: 'short',
             })}
           </div>
-          <div className="text-xs text-muted-foreground text-center mb-3">
+          <div className="receipt-saleno text-xs text-muted-foreground text-center mb-3">
             Sale #{sale.id.slice(-8).toUpperCase()}
           </div>
           {(payStatus === 'UNPAID' || payStatus === 'PARTIAL') && (
