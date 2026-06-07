@@ -10,6 +10,7 @@ import {
   type OfflineSaleLineMeta,
 } from '@/lib/offline/synthetic';
 import { normalizePublicApiBase } from '@/lib/api/normalize-api-base';
+import { uuid } from '@/lib/utils/uuid';
 
 const API_BASE = normalizePublicApiBase(process.env.NEXT_PUBLIC_API_URL);
 
@@ -94,7 +95,7 @@ function prepareMutationBody(
 
   if (method === 'POST' && ['/sales', '/purchases', '/adjustments'].includes(path)) {
     if (typeof o.clientMutationId !== 'string' || !o.clientMutationId) {
-      o.clientMutationId = crypto.randomUUID();
+      o.clientMutationId = uuid();
     }
   }
 
@@ -114,7 +115,7 @@ async function handleOfflineOrQueueMutation<T>(params: {
   }
 
   const parsed = JSON.parse(bodyJson) as Record<string, unknown>;
-  const clientMutationId = (parsed.clientMutationId as string) || crypto.randomUUID();
+  const clientMutationId = (parsed.clientMutationId as string) || uuid();
 
   if (method === 'POST' && path === '/sales') {
     const lines =
@@ -217,7 +218,7 @@ async function handleOfflineOrQueueMutation<T>(params: {
     return buildSyntheticAdjustment(clientMutationId, adjBody, meta) as T;
   }
 
-  const oid = crypto.randomUUID();
+  const oid = uuid();
   await enqueueOutbox({
     id: oid,
     method,
